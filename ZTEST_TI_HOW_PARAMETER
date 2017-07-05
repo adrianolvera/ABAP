@@ -1,0 +1,54 @@
+*&---------------------------------------------------------------------*
+*& Report  ZTEST_TI_HOW_PARAMETER
+*&
+*&---------------------------------------------------------------------*
+*&
+*&
+*&---------------------------------------------------------------------*
+
+REPORT ZTEST_TI_HOW_PARAMETER.
+
+CLASS lcl_date DEFINITION.
+
+  PUBLIC SECTION.
+
+    METHODS : get_data exporting ti_sflight TYPE ANY TABLE.
+
+ENDCLASS.
+
+
+CLASS lcl_date IMPLEMENTATION.
+
+  METHOD get_data.
+
+  select * from sflight into CORRESPONDING FIELDS OF TABLE ti_sflight.
+
+  ENDMETHOD.
+
+
+ENDCLASS.
+
+
+TYPES : BEGIN OF ty_sflight,
+        carrid TYPE s_carr_id,
+        connid TYPE s_conn_id,
+        fldate TYPE s_date,
+      END OF ty_sflight.
+
+DATA : gr_date TYPE REF TO lcl_date,
+       gv_display TYPE string.
+
+DATA : ti_sflighter TYPE STANDARD TABLE OF ty_sflight,
+       wa_sflight LIKE LINE OF ti_sflighter.
+
+  START-OF-SELECTION.
+
+  CREATE OBJECT gr_date.
+
+  CALL METHOD gr_date->get_data importing ti_sflight = ti_sflighter.
+
+  LOOP AT ti_sflighter into wa_sflight.
+    write : / wa_sflight-carrid.
+    write :  wa_sflight-connid.
+    write :  wa_sflight-fldate.
+  ENDLOOP.
