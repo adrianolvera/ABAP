@@ -1,0 +1,72 @@
+"ZMM_ORDCOMPRA_BPK
+
+
+REPORT  ZMM_ORDCOMPRA_BPK.
+************************************************************************
+*Declaración de tablas
+************************************************************************
+INCLUDE ZMM_ORDCOMPRA_TOP_BPK.
+INCLUDE ZMM_ORDCOMPRA_PBO_BPK.
+INCLUDE ZMM_ORDCOMPRA_PAI_BPK.
+INCLUDE ZMM_ORDCOMPRA_F_BPK.
+
+*************************************************************************
+*Start-of-Selection|
+************************************************************************
+START-OF-SELECTION.
+*AUTHORITY-CHECK OBJECT 'M_BEST_EKO' "bscablfran 16-Oct-2013 cambios de roger
+*       "  ID 'ACTVT' FIELD '__________'
+*         ID 'EKORG' FIELD SO_ORGCO-LOW.
+*
+*        IF sy-subrc <> 0.
+*          MESSAGE 'No esta autorizado para esta organizacion'  TYPE 'S' DISPLAY LIKE 'E'.
+*        ENDIF.
+
+*     AUTHORITY-CHECK OBJECT 'ZREP_REC'
+*             ID 'BUKRS' FIELD P_BUKRS-LOW.
+*    IF SY-SUBRC NE 0.
+*      MESSAGE I010(AD) WITH 'No esta autorizado para ver esta Sociedad'.
+*    ELSE.
+*      AUTHORITY-CHECK OBJECT 'ZREP_REC'
+*             ID 'EKORG' FIELD SO_ORGCO-LOW.
+*      IF SY-SUBRC NE 0.
+*        MESSAGE I010(AD) WITH 'No esta autorizado para ver esta Organización'.
+*      ELSE.
+*
+*  AUTHORITY-CHECK OBJECT 'ZREP_REC'   "  DEVK981837-------BSCABBRET 26.05.2015 ADICION AUTHORITY
+*               ID 'ACTVT' FIELD '03'
+*               ID 'ACTVT' FIELD '08'
+*               ID 'ACTVT' FIELD '09'
+*               ID 'BUKRS' FIELD P_BUKRS-LOW
+*               ID 'EKORG' FIELD so_orgco-LOW.
+
+
+***data: prueba type c.
+***
+***clear prueba.
+
+***
+***IF p_dpurch  EQ 'X'.
+***
+***
+***IF pa_stat IS NOT INITIAL.
+***
+***MESSAGE I010(AD) WITH text-116.
+***prueba = '1'.
+***  ENDIF.
+***
+***ENDIF.
+
+
+***if prueba is INITIAL.
+  CALL SCREEN 110.
+***endif.
+
+
+AT SELECTION-SCREEN.
+*====================== BSCABRSALI 27/04/2015 ============================
+*================= DEVK  / OSS-150414-0954 =========================
+* Validacion por centro !.
+*==========================================================================
+** PERFORM VALIDAR_AUTORIZACIONES .
+*===============================  Fin  ®===================================
