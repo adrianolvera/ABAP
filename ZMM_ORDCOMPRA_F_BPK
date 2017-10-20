@@ -1,0 +1,3535 @@
+*&---------------------------------------------------------------------*
+*&  Include           ZMM_ORDCOMPRA_F_BPK
+*&----------------------------------------------------------------------*
+
+*&-----------------------------------------------------------------------*
+*&      Form  TOMADATOS
+*&----------------------------------------------------------------------*
+
+FORM tomadatos .
+  DATA: status(2).
+*------------------------DEVK977849.BSCABOVELA------------------------*
+  DATA: lv_netpr TYPE ekpo-netpr.
+  DATA: lv_netwr TYPE string.
+*------------------------DEVK977849.BSCABOVELA------------------------*
+*------------------------DEVK984797.BSCABOVELA------------------------*
+  DATA: lw_adprx  TYPE ty_adpri.
+  DATA: lw_afih   TYPE ty_afih.
+*------------------------DEVK984797.BSCABOVELA------------------------*
+*>----------------------DEVK998646.BSCABOVELA------------------------->*
+  DATA: lt_a017 TYPE STANDARD TABLE OF ty_a017.
+  DATA: lw_a017 TYPE ty_a017.
+  DATA: lt_konp TYPE STANDARD TABLE OF ty_konp.
+  DATA: lw_konp TYPE ty_konp.
+*<----------------------DEVK998646.BSCABOVELA-------------------------<*
+  CLEAR: caso.
+
+
+  CONCATENATE pa_stat-low '%' INTO status.
+
+
+
+*DEVK977849
+    TYPES: BEGIN OF ty_eine,
+      infnr TYPE eine-infnr ,
+      esokz TYPE eine-esokz ,
+      werks TYPE eine-werks ,
+      loekz TYPE eine-loekz ,
+      erdat TYPE eine-erdat ,
+      prdat TYPE eine-prdat ,
+      netpr TYPE eine-netpr ,
+      waers TYPE eine-waers ,
+    END OF ty_eine.
+
+    DATA: ti_eine TYPE STANDARD TABLE OF ty_eine,
+          wa_eine TYPE ty_eine.
+
+
+IF p_dpurch  EQ 'X'.
+
+***BSCABMBRET ADICION NUEVOS CAMPOS  DE TOTAL RELEASE  2017/03/24
+
+  SELECT
+    a~bukrs
+    a~ekorg
+    a~ebeln
+    a~aedat
+    a~bedat
+    a~frgke
+    a~bsart
+    a~lifnr
+    a~waers
+    a~waers AS waersn
+    a~zterm
+    a~zbd1t
+    a~knumv
+    a~ekgrp
+    a~wkurs
+    a~ernam
+    b~ebelp
+    b~banfn
+    b~bnfpo "bscablfran 02-09-2013
+    b~matnr
+    b~txz01
+    b~menge
+    b~meins
+    b~meins AS meinsn
+    b~netpr
+    b~netwr
+    b~elikz
+*------------------------DEVK977849.BSCABOVELA------------------------*
+    b~peinh
+*------------------------DEVK977849.BSCABOVELA------------------------*
+*-----------------------DEVK976411.BSCABOVELA-----------------------*
+    b~bednr
+    b~ean11
+*-----------------------DEVK976411.BSCABOVELA-----------------------*
+
+*====================== BSCABRSALI 19/12/2014 ============================
+*================= DEVK977679  / OSS-141121-1842 =========================
+    b~pstyp
+    b~knttp
+*===============================  Fin  ®===================================
+
+    b~infnr
+*====================== BSCABRSALI 21/05/2015 ============================
+*=================  DEVK981720 / OSS-150519-1748 =========================
+    b~loekz
+*===============================  Fin  ®===================================
+*    C~NAME1
+    a~frggr "BSCABJDELG 26/11/2012 "Grupo de Liberacion (Planta)
+    a~frgsx "BSCABJDELG 26/11/2012 "Estrategia de liberacion (Quienes son los autorizadores y en que orden)
+    a~frgzu "BSCABJDELG 29/11/2012 "Cuantas liberaciones tiene
+    d~eindt "BSCABLFRAN 11-03-2013
+    a~reswk
+    "E~BADAT "BSCABLFRAN
+    "E~FRGDT "  E~ERDAT "BSCABLFRAN " Fecha Liberación sol. ped.
+   " E~FRGKZ "BSCABLFRAN 02-09-2013
+    "F~SAKTO "BSCABLFRAN 13-08-2013
+*--------------------DEVK980031.BSCABOVELA----------------------------*
+    a~kdatb
+    a~kdate
+    b~webre
+*--------------------DEVK980031.BSCABOVELA----------------------------*
+*--------------------DEVK982517.BSCABOVELA----------------------------*
+    b~werks
+*--------------------DEVK982517.BSCABOVELA----------------------------*
+*------------------------DEVK984797.BSCABOVELA------------------------*
+    b~adpri
+*------------------------DEVK984797.BSCABOVELA------------------------*
+
+*====================== BSCABRSALI 05/11/2015 ============================
+*=================  DEVK985551 / OSS-151016-1710 =========================
+    b~AFNAM
+*===============================  Fin  ®==================================
+    b~BWTAR
+  FROM ekko AS a
+    JOIN ekpo AS b ON  b~mandt = a~mandt AND  b~ebeln = a~ebeln
+*    JOIN LFA1 AS C ON  C~MANDT = A~MANDT AND  C~LIFNR = A~LIFNR
+    JOIN eket AS d ON  d~ebeln = a~ebeln AND  d~ebelp = b~ebelp "BSCABLFRAN 11-03-2013
+  "  LEFT  JOIN EBAN AS E ON  E~EBELN = B~EBELN AND  E~EBELP = B~EBELP "BSCABLFRAN 13-08-2013
+  "  LEFT JOIN EKKN AS F ON   F~EBELN = B~EBELN AND  F~EBELP = B~EBELP"BSCABLFRAN 13-08-2013
+
+ INTO CORRESPONDING FIELDS OF TABLE it_alv
+    WHERE a~bukrs IN p_bukrs
+      AND a~ekorg IN so_orgco
+      AND a~ebeln IN so_ebeln
+      AND a~bsart IN so_bsart
+      AND a~lifnr IN so_lifnr
+      AND a~aedat IN so_datum
+      AND a~frgke LIKE status
+      AND a~bstyp = 'F'
+*====================== BSCABRSALI 21/05/2015 ============================
+*=================  DEVK981720 / OSS-150424-1418 =========================
+      AND a~ekgrp IN so_ekgrp
+*===============================  Fin  ®===================================
+      AND b~loekz = 'L'
+      AND b~ematn  IN p_ematn   "BSCABJALME   OSS-140502-1157   08/May/2014
+      .
+  """
+  IF sy-subrc = 0. "se comenta el q trae la cuenta mayor < BSCABLFRAN 29-OCT-2013
+*------------------------DEVK984797.BSCABOVELA------------------------*
+    SELECT a~banfn
+           a~bnfpo
+           c~priokx
+      INTO TABLE gt_afih
+      FROM ebkn AS a
+      JOIN afih AS b ON b~aufnr EQ a~aufnr
+      LEFT JOIN t356_t AS c ON  c~spras EQ sy-langu
+                            AND c~artpr EQ b~artpr
+                            AND c~priok EQ b~priok
+      FOR ALL ENTRIES IN it_alv
+      WHERE a~banfn EQ it_alv-banfn
+        AND a~bnfpo EQ it_alv-bnfpo
+        AND a~aufnr NE space.
+    SELECT  adpri
+            adprx
+      FROM  cspcprit
+      INTO TABLE gt_adprx
+      FOR ALL ENTRIES IN it_alv
+      WHERE spras EQ sy-langu
+        AND adpri EQ it_alv-adpri.
+*------------------------DEVK984797.BSCABOVELA------------------------*
+    SELECT banfn
+           badat
+           frgdt
+           frgkz
+*====================== BSCABRSALI DD/MM/20AA ============================
+*================= DEVK  / OSS-150129-1215 =========================
+           idnlf
+           bnfpo
+*===============================  Fin  ®===================================
+           FROM eban
+          INTO TABLE ti_eban "bscablfran 14-08-2013
+         FOR ALL ENTRIES IN it_alv
+      WHERE banfn = it_alv-banfn.
+    SORT ti_eban BY banfn.
+
+*------------------------DEVK977405.BSCABOVELA------------------------*
+    SELECT matnr
+           groes
+      FROM mara
+      INTO TABLE lt_groes
+      FOR ALL ENTRIES IN it_alv
+      WHERE matnr = it_alv-matnr.
+*------------------------DEVK977405.BSCABOVELA------------------------*
+
+    SELECT *
+      FROM t163y
+      INTO TABLE ti_t163y
+      FOR ALL ENTRIES IN it_alv
+      WHERE pstyp = it_alv-pstyp
+        AND spras = sy-langu.
+
+****DEVK977849
+***    TYPES: BEGIN OF ty_eine,
+***      infnr TYPE eine-infnr ,
+***      esokz TYPE eine-esokz ,
+***      werks TYPE eine-werks ,
+***      loekz TYPE eine-loekz ,
+***      erdat TYPE eine-erdat ,
+***      prdat TYPE eine-prdat ,
+***      netpr TYPE eine-netpr ,
+***      waers TYPE eine-waers ,
+***    END OF ty_eine.
+***
+***    DATA: ti_eine TYPE STANDARD TABLE OF ty_eine,
+***          wa_eine TYPE ty_eine.
+*>----------------------DEVK998646.BSCABOVELA------------------------->*
+*    SELECT
+*          infnr
+*          esokz
+*          werks
+*          loekz
+*          erdat
+*          prdat
+*          netpr
+*          waers
+*    FROM eine
+*    INTO TABLE ti_eine
+*    FOR ALL ENTRIES IN it_alv
+*    WHERE infnr = it_alv-infnr
+*    AND ekorg = it_alv-ekorg.
+*    IF sy-subrc = 0.
+*      SORT ti_eine BY infnr.
+*      DELETE ti_eine WHERE loekz = 'X'.
+*    ENDIF.
+
+    SELECT lifnr
+           matnr
+           ekorg
+           werks
+           datbi
+           datab
+           knumh
+      INTO TABLE lt_a017
+      FROM a017
+      FOR ALL ENTRIES IN it_alv
+      WHERE lifnr EQ it_alv-lifnr
+        AND matnr EQ it_alv-matnr
+        AND ekorg EQ it_alv-ekorg
+        AND werks EQ it_alv-werks
+        AND datbi GE it_alv-aedat
+        AND datab LE it_alv-aedat.
+    IF sy-subrc EQ 0.
+      SELECT knumh
+             kbetr
+             konwa
+        INTO TABLE lt_konp
+        FROM konp
+        FOR ALL ENTRIES IN lt_a017
+        WHERE knumh EQ lt_a017-knumh.
+      IF sy-subrc EQ 0.
+        LOOP AT lt_konp INTO lw_konp.
+          MOVE lw_konp-kbetr TO lw_a017-kbetr.
+          MOVE lw_konp-konwa TO lw_a017-konwa.
+          MODIFY lt_a017 FROM lw_a017 TRANSPORTING kbetr konwa
+                                      WHERE knumh EQ lw_konp-knumh.
+          CLEAR lw_a017.
+        ENDLOOP.
+      ENDIF.
+    ENDIF.
+*<----------------------DEVK998646.BSCABOVELA-------------------------<*
+  ENDIF.
+
+
+***  ***** FIN
+
+
+  ELSE.
+
+  SELECT
+    a~bukrs
+    a~ekorg
+    a~ebeln
+    a~aedat
+    a~bedat
+    a~frgke
+    a~bsart
+    a~lifnr
+    a~waers
+    a~waers AS waersn
+    a~zterm
+    a~zbd1t
+    a~knumv
+    a~ekgrp
+    a~wkurs
+    a~ernam
+    b~ebelp
+    b~banfn
+    b~bnfpo "bscablfran 02-09-2013
+    b~matnr
+    b~txz01
+    b~menge
+    b~meins
+    b~meins AS meinsn
+    b~netpr
+    b~netwr
+    b~elikz
+*------------------------DEVK977849.BSCABOVELA------------------------*
+    b~peinh
+*------------------------DEVK977849.BSCABOVELA------------------------*
+*-----------------------DEVK976411.BSCABOVELA-----------------------*
+    b~bednr
+    b~ean11
+*-----------------------DEVK976411.BSCABOVELA-----------------------*
+
+*====================== BSCABRSALI 19/12/2014 ============================
+*================= DEVK977679  / OSS-141121-1842 =========================
+    b~pstyp
+    b~knttp
+*===============================  Fin  ®===================================
+
+    b~infnr
+*====================== BSCABRSALI 21/05/2015 ============================
+*=================  DEVK981720 / OSS-150519-1748 =========================
+    b~loekz
+*===============================  Fin  ®===================================
+*    C~NAME1
+    a~frggr "BSCABJDELG 26/11/2012 "Grupo de Liberacion (Planta)
+    a~frgsx "BSCABJDELG 26/11/2012 "Estrategia de liberacion (Quienes son los autorizadores y en que orden)
+    a~frgzu "BSCABJDELG 29/11/2012 "Cuantas liberaciones tiene
+    d~eindt "BSCABLFRAN 11-03-2013
+    a~reswk
+    "E~BADAT "BSCABLFRAN
+    "E~FRGDT "  E~ERDAT "BSCABLFRAN " Fecha Liberación sol. ped.
+   " E~FRGKZ "BSCABLFRAN 02-09-2013
+    "F~SAKTO "BSCABLFRAN 13-08-2013
+*--------------------DEVK980031.BSCABOVELA----------------------------*
+    a~kdatb
+    a~kdate
+    b~webre
+*--------------------DEVK980031.BSCABOVELA----------------------------*
+*--------------------DEVK982517.BSCABOVELA----------------------------*
+    b~werks
+*--------------------DEVK982517.BSCABOVELA----------------------------*
+*------------------------DEVK984797.BSCABOVELA------------------------*
+    b~adpri
+*------------------------DEVK984797.BSCABOVELA------------------------*
+
+*====================== BSCABRSALI 05/11/2015 ============================
+*=================  DEVK985551 / OSS-151016-1710 =========================
+    b~AFNAM
+*===============================  Fin  ®==================================
+    b~BWTAR
+  FROM ekko AS a
+    JOIN ekpo AS b ON  b~mandt = a~mandt AND  b~ebeln = a~ebeln
+*    JOIN LFA1 AS C ON  C~MANDT = A~MANDT AND  C~LIFNR = A~LIFNR
+    JOIN eket AS d ON  d~ebeln = a~ebeln AND  d~ebelp = b~ebelp "BSCABLFRAN 11-03-2013
+  "  LEFT  JOIN EBAN AS E ON  E~EBELN = B~EBELN AND  E~EBELP = B~EBELP "BSCABLFRAN 13-08-2013
+  "  LEFT JOIN EKKN AS F ON   F~EBELN = B~EBELN AND  F~EBELP = B~EBELP"BSCABLFRAN 13-08-2013
+
+ INTO CORRESPONDING FIELDS OF TABLE it_alv
+    WHERE a~bukrs IN p_bukrs
+      AND a~ekorg IN so_orgco
+      AND a~ebeln IN so_ebeln
+      AND a~bsart IN so_bsart
+      AND a~lifnr IN so_lifnr
+      AND a~aedat IN so_datum
+      AND a~frgke LIKE status
+      AND a~bstyp = 'F'
+*====================== BSCABRSALI 21/05/2015 ============================
+*=================  DEVK981720 / OSS-150424-1418 =========================
+      AND a~ekgrp IN so_ekgrp
+*===============================  Fin  ®===================================
+      AND b~loekz <> 'L'
+      AND b~ematn  IN p_ematn   "BSCABJALME   OSS-140502-1157   08/May/2014
+      .
+  """
+  IF sy-subrc = 0. "se comenta el q trae la cuenta mayor < BSCABLFRAN 29-OCT-2013
+*------------------------DEVK984797.BSCABOVELA------------------------*
+    SELECT a~banfn
+           a~bnfpo
+           c~priokx
+      INTO TABLE gt_afih
+      FROM ebkn AS a
+      JOIN afih AS b ON b~aufnr EQ a~aufnr
+      LEFT JOIN t356_t AS c ON  c~spras EQ sy-langu
+                            AND c~artpr EQ b~artpr
+                            AND c~priok EQ b~priok
+      FOR ALL ENTRIES IN it_alv
+      WHERE a~banfn EQ it_alv-banfn
+        AND a~bnfpo EQ it_alv-bnfpo
+        AND a~aufnr NE space.
+    SELECT  adpri
+            adprx
+      FROM  cspcprit
+      INTO TABLE gt_adprx
+      FOR ALL ENTRIES IN it_alv
+      WHERE spras EQ sy-langu
+        AND adpri EQ it_alv-adpri.
+*------------------------DEVK984797.BSCABOVELA------------------------*
+    SELECT banfn
+           badat
+           frgdt
+           frgkz
+*====================== BSCABRSALI DD/MM/20AA ============================
+*================= DEVK  / OSS-150129-1215 =========================
+           idnlf
+           bnfpo
+*===============================  Fin  ®===================================
+           FROM eban
+          INTO TABLE ti_eban "bscablfran 14-08-2013
+         FOR ALL ENTRIES IN it_alv
+      WHERE banfn = it_alv-banfn.
+    SORT ti_eban BY banfn.
+
+*------------------------DEVK977405.BSCABOVELA------------------------*
+    SELECT matnr
+           groes
+      FROM mara
+      INTO TABLE lt_groes
+      FOR ALL ENTRIES IN it_alv
+      WHERE matnr = it_alv-matnr.
+*------------------------DEVK977405.BSCABOVELA------------------------*
+
+    SELECT *
+      FROM t163y
+      INTO TABLE ti_t163y
+      FOR ALL ENTRIES IN it_alv
+      WHERE pstyp = it_alv-pstyp
+        AND spras = sy-langu.
+*>----------------------DEVK998646.BSCABOVELA------------------------->*
+*    SELECT
+*          infnr
+*          esokz
+*          werks
+*          loekz
+*          erdat
+*          prdat
+*          netpr
+*          waers
+*    FROM eine
+*    INTO TABLE ti_eine
+*    FOR ALL ENTRIES IN it_alv
+*    WHERE infnr = it_alv-infnr
+*    AND ekorg = it_alv-ekorg.
+*    IF sy-subrc = 0.
+*      SORT ti_eine BY infnr.
+*      DELETE ti_eine WHERE loekz = 'X'.
+*    ENDIF.
+
+    SELECT lifnr
+           matnr
+           ekorg
+           werks
+           datbi
+           datab
+           knumh
+      INTO TABLE lt_a017
+      FROM a017
+      FOR ALL ENTRIES IN it_alv
+      WHERE lifnr EQ it_alv-lifnr
+        AND matnr EQ it_alv-matnr
+        AND ekorg EQ it_alv-ekorg
+        AND werks EQ it_alv-werks
+        AND datbi GE it_alv-aedat
+        AND datab LE it_alv-aedat.
+    IF sy-subrc EQ 0.
+      SELECT knumh
+             kbetr
+             konwa
+        INTO TABLE lt_konp
+        FROM konp
+        FOR ALL ENTRIES IN lt_a017
+        WHERE knumh EQ lt_a017-knumh.
+      IF sy-subrc EQ 0.
+        LOOP AT lt_konp INTO lw_konp.
+          MOVE lw_konp-kbetr TO lw_a017-kbetr.
+          MOVE lw_konp-konwa TO lw_a017-konwa.
+          MODIFY lt_a017 FROM lw_a017 TRANSPORTING kbetr konwa
+                                      WHERE knumh EQ lw_konp-knumh.
+          CLEAR lw_a017.
+        ENDLOOP.
+      ENDIF.
+    ENDIF.
+*<----------------------DEVK998646.BSCABOVELA-------------------------<*
+  ENDIF.
+
+  ENDIF.
+
+
+
+
+
+
+  LOOP AT it_alv INTO wa_alv.
+
+    vl_indice = sy-tabix.
+
+*====================== BSCABRSALI DD/MM/20AA ============================
+*================= DEVK  / OSS-150219-0831 =========================
+    IF wa_alv-aedat IS INITIAL.
+      wa_alv-aedat = ' '.
+    ENDIF.
+    IF wa_alv-eindt IS INITIAL.
+      wa_alv-eindt = ' '.
+    ENDIF.
+    IF wa_alv-budat IS INITIAL.
+      wa_alv-budat = ' '.
+    ENDIF.
+    IF wa_alv-datvr IS INITIAL.
+      wa_alv-datvr = ' '.
+    ENDIF.
+    IF wa_alv-udate IS INITIAL.
+      wa_alv-udate = ' '.
+    ENDIF.
+    IF wa_alv-badat IS INITIAL.
+      wa_alv-badat = ' '.
+    ENDIF.
+    IF wa_alv-flibe IS INITIAL.
+      wa_alv-flibe  = ' '.
+    ENDIF.
+
+
+*===============================  Fin  ®===================================
+
+    IF wa_alv-pstyp = 2.
+*------------------------DEVK982517.BSCABOVELA------------------------*
+      READ TABLE ti_eban INTO wa_eban WITH KEY banfn = wa_alv-banfn
+                                               bnfpo = wa_alv-bnfpo.
+*
+      IF sy-subrc EQ 0.
+        wa_alv-badat = wa_eban-badat.
+        wa_alv-frgdt = wa_eban-frgdt.
+        wa_alv-frgkz = wa_eban-frgkz.
+        CLEAR wa_eban.
+      ENDIF.
+*------------------------DEVK982517.BSCABOVELA------------------------*
+*>----------------------DEVK998646.BSCABOVELA------------------------->*
+*      READ TABLE ti_eine INTO wa_eine WITH KEY infnr = wa_alv-infnr BINARY SEARCH.
+      LOOP AT lt_a017 INTO lw_a017 WHERE  lifnr EQ wa_alv-lifnr
+                                     AND  matnr EQ wa_alv-matnr
+                                     AND  ekorg EQ wa_alv-ekorg
+                                     AND  werks EQ wa_alv-werks
+                                     AND  datbi GE wa_alv-aedat
+                                     AND  datab LE wa_alv-aedat.
+      ENDLOOP.
+*<----------------------DEVK998646.BSCABOVELA-------------------------<*
+      IF sy-subrc = 0.
+        wa_alv-netal = lw_a017-kbetr / wa_alv-peinh.  "DEVK998646
+        lv_netpr = lw_a017-kbetr / wa_alv-peinh. "DEVK998646.BSCABOVELA
+        wa_alv-netal = wa_alv-netal - lv_netpr.
+        wa_alv-netal = wa_alv-netal * 10000000000.
+
+*====================== BSCABRSALI 26/02/2015 ============================
+*================= DEVK  / OSS-150123-1141 =========================
+        wa_alv-waersn = lw_a017-konwa."DEVK998646.BSCABOVELA
+        wa_alv-waers = lw_a017-konwa. "DEVK998646.BSCABOVELA
+*===============================  Fin  ®===================================
+
+        IF wa_alv-netal EQ 0.
+          wa_alv-netal = lv_netpr.
+          MOVE wa_alv-netal TO wa_alv-netwr. "DEVK989482.BSCABOVELA
+        ELSE.
+          wa_alv-netal = lw_a017-kbetr / wa_alv-peinh.  "DEVK998646
+          MOVE wa_alv-netal TO wa_alv-netwr. "DEVK989482.BSCABOVELA
+        ENDIF.
+        lv_netwr = wa_alv-menge * wa_alv-netal.
+        wa_alv-netsr = ( TRUNC( lv_netwr * 100 ) ) / 100.
+        MODIFY it_alv FROM wa_alv INDEX vl_indice TRANSPORTING badat frgdt frgkz netal netsr waersn waers netwr. "DEVK989482.BSCABOVELA
+      ENDIF.
+    ELSE.
+      READ TABLE ti_eban INTO wa_eban WITH KEY banfn = wa_alv-banfn
+                                               bnfpo = wa_alv-bnfpo.
+*                                                                    BINARY SEARCH.
+      IF sy-subrc = 0.
+        wa_alv-badat = wa_eban-badat.
+        wa_alv-frgdt = wa_eban-frgdt.
+        wa_alv-frgkz = wa_eban-frgkz.
+*====================== BSCABRSALI DD/MM/20AA ============================
+*================= DEVK  / OSS-150129-1215 =========================
+        wa_alv-idnlf = wa_eban-idnlf.
+        CLEAR wa_eban.
+*===============================  Fin  ®===================================
+      ENDIF.
+*------------------------DEVK977849.BSCABOVELA------------------------*
+      wa_alv-netal = wa_alv-netpr / wa_alv-peinh.
+      lv_netpr = wa_alv-netpr / wa_alv-peinh.
+      wa_alv-netal = wa_alv-netal - lv_netpr.
+      wa_alv-netal = wa_alv-netal * 10000000000.
+      IF wa_alv-netal = 0.
+        wa_alv-netal = lv_netpr.
+        MOVE wa_alv-netal TO wa_alv-netwr. "DEVK989482.BSCABOVELA
+      ELSE.
+        wa_alv-netal = wa_alv-netpr / wa_alv-peinh.
+        MOVE wa_alv-netal TO wa_alv-netwr. "DEVK989482.BSCABOVELA
+      ENDIF.
+      lv_netwr = wa_alv-menge * wa_alv-netal.
+      wa_alv-netsr = ( TRUNC( lv_netwr * 100 ) ) / 100.
+
+      MODIFY it_alv FROM wa_alv INDEX vl_indice TRANSPORTING badat frgdt frgkz netal netsr idnlf aedat eindt budat datvr udate badat flibe netwr. "DEVK989482.BSCABOVELA
+*    MODIFY IT_ALV FROM WA_ALV INDEX vl_indice TRANSPORTING BADAT FRGDT FRGKZ.
+*------------------------DEVK977849.BSCABOVELA------------------------*
+    ENDIF.
+
+
+
+*-----------------------------------------------------------------------------------------------------
+*    IF wa_alv-pstyp = 2.
+*      READ TABLE ti_eine INTO wa_eine WITH KEY infnr = wa_alv-infnr BINARY SEARCH.
+*      IF sy-subrc = 0.
+*        wa_alv-NETPR = wa_eine-netpr / wa_alv-peinh.        " Precio
+*        wa_alv-NETWR = wa_alv-menge * wa_alv-NETPR.         " Neto
+*        wa_alv-NETWR = ( TRUNC( wa_alv-NETWR * 100 ) ) / 100.
+*        MODIFY it_alv FROM wa_alv INDEX vl_indice.
+*        CLEAR wa_alv.
+*      ENDIF.
+*    ELSE.
+*      READ TABLE ti_eban INTO wa_eban WITH KEY banfn = wa_alv-banfn
+*      BINARY SEARCH.
+*      IF sy-subrc = 0.
+*        wa_alv-badat = wa_eban-badat.
+*        wa_alv-frgdt = wa_eban-frgdt.
+*        wa_alv-frgkz = wa_eban-frgkz.
+**------------------------DEVK977849.BSCABOVELA------------------------*
+*        wa_alv-NETPR = wa_alv-netpr / wa_alv-peinh.
+*        wa_alv-NETWR = ( TRUNC( wa_alv-netwr * 100 ) ) / 100.
+*        MODIFY it_alv FROM wa_alv INDEX vl_indice TRANSPORTING badat frgdt frgkz netal netsr.
+*        CLEAR wa_alv.
+**------------------------DEVK977849.BSCABOVELA------------------------*
+*      ENDIF.
+*    ENDIF.
+*====================== BSCABRSALI 21/05/2015 ============================
+*=================  DEVK981720 / OSS-150519-1748 =========================
+    IF wa_alv-loekz = 'S'.
+      wa_alv-loekz = 'X'.
+      MODIFY it_alv FROM wa_alv INDEX vl_indice TRANSPORTING loekz.
+    ELSE.
+      wa_alv-loekz = space.
+      MODIFY it_alv FROM wa_alv INDEX vl_indice TRANSPORTING loekz.
+    ENDIF.
+*===============================  Fin  ®===================================
+
+  ENDLOOP. "BSCABLFRAN 29-OCT-2013>>
+  ""
+
+  IF sy-subrc = 0. "se comenta el q trae la cuenta mayor < BSCABLFRAN 29-OCT-2013
+    SELECT  ebeln
+            ebelp
+            sakto
+
+           FROM ekkn
+          INTO TABLE ti_ebkn "bscablfran 14-08-2013
+         FOR ALL ENTRIES IN it_alv
+      WHERE ebeln = it_alv-ebeln AND
+            ebelp = it_alv-ebelp.
+    IF sy-subrc = 0.
+      SORT ti_ebkn BY ebeln ebelp.
+
+    ENDIF.
+  ENDIF.
+  LOOP AT it_alv INTO wa_alv.
+    vl_indice = sy-tabix.
+    READ TABLE ti_ebkn INTO wa_ebkn WITH KEY
+    ebeln = wa_alv-ebeln
+    ebelp = wa_alv-ebelp
+    BINARY SEARCH.
+    IF sy-subrc = 0.
+      wa_alv-sakto = wa_ebkn-sakto.
+
+    ENDIF.
+    MODIFY it_alv FROM wa_alv INDEX vl_indice TRANSPORTING sakto.
+*------------------------DEVK984797.BSCABOVELA------------------------*
+    READ TABLE gt_afih INTO lw_afih WITH KEY banfn = wa_alv-banfn
+                                             bnfpo = wa_alv-bnfpo.
+    IF sy-subrc EQ 0.
+      wa_alv-adprx = lw_afih-priokx.
+    ELSE.
+      READ TABLE gt_adprx INTO lw_adprx WITH KEY adpri = wa_alv-adpri.
+      IF sy-subrc EQ 0.
+        wa_alv-adprx = lw_adprx-adprx.
+      ENDIF.
+    ENDIF.
+    MODIFY it_alv FROM wa_alv INDEX vl_indice TRANSPORTING sakto adprx.
+*    MODIFY it_alv FROM wa_alv INDEX vl_indice TRANSPORTING sakto.
+*------------------------DEVK984797.BSCABOVELA------------------------*
+  ENDLOOP. "BSCABLFRAN 29-OCT-2013>>
+
+  IF sy-subrc = 0.
+    SELECT a~kokrs  "<<<< DESDE AQUI >>>
+           a~ebeln
+           a~ebelp
+           a~matnr
+           b~budat
+          INTO TABLE it_mblnr
+          FROM mseg AS a
+          JOIN mkpf AS b ON  a~mblnr = b~mblnr
+          AND                a~mjahr = b~mjahr
+      FOR ALL ENTRIES IN it_alv
+      WHERE bwart EQ '101'
+      AND a~matnr EQ it_alv-matnr
+*      AND a~werks EQ it_alv-ekorg "DEVK982517.BSCABOVELA
+      AND a~werks EQ it_alv-werks " Centro "DEVK982517.BSCABOVELA
+      AND a~ebeln EQ it_alv-ebeln
+      AND a~ebelp EQ it_alv-ebelp
+      AND a~kokrs EQ it_alv-bukrs "Sociedad
+*      AND a~pargb EQ it_alv-ekorg " Organizacion "DEVK982517.BSCABOVELA
+      AND a~pargb EQ it_alv-werks " Centro  "DEVK982517.BSCABOVELA
+     " AND a~MJAHR EQ IT_ALV-MJAHR
+      %_HINTS DB6 '<IXSCAN TABLE=''BSEG'' INDEX=''"BSEG~BUT"'' />' .
+
+    IF sy-subrc = 0 .
+
+      SORT it_mblnr BY kokrs matnr budat  DESCENDING. "bscablfran
+*DELETE ADJACENT DUPLICATES FROM it_mblnr comparing kokrs matnr .
+    ENDIF. "<<<<< HASTA AQUI >>>>  BSCABLFRAN
+  ENDIF.
+
+  SELECT
+         lifnr
+         name1
+  FROM lfa1
+  INTO TABLE ti_lfa1
+  FOR ALL ENTRIES IN it_alv
+  WHERE lifnr = it_alv-lifnr.
+  IF sy-subrc = 0.
+
+    DATA: vl_tabix TYPE sy-tabix.
+
+    SORT  ti_lfa1 BY lifnr.
+
+    LOOP AT it_alv INTO wa_alv.
+
+      vl_tabix = sy-tabix.
+
+      READ TABLE ti_lfa1  INTO wa_lfa1 WITH KEY lifnr = wa_alv-lifnr.
+      IF sy-subrc = 0.
+        wa_alv-name1 = wa_lfa1-name1.
+        MODIFY it_alv FROM wa_alv INDEX vl_tabix.
+        CLEAR:   wa_lfa1.
+      ENDIF.
+      CLEAR:  wa_alv,
+              vl_tabix.
+    ENDLOOP.
+    FREE ti_lfa1.
+  ENDIF.
+
+
+  PERFORM toma_mas_datos.
+
+  PERFORM toma_textos. "Toma TEXTOS de Lineas
+
+******************************************************************
+* BSCABJALME    OSS-140502-1157   02/05/2014
+  IF p_pend = 'X'.
+    PERFORM pendiente_entregar. "Condicion de Pendiente por entregar
+  ENDIF.
+******************************************************************
+
+  IF p_ga = 'X'.
+    PERFORM toma_condiciones. "Toma Condiciones de Gastos
+  ENDIF.
+
+  IF p_m5000 = 'X'.  "Mostrar solo regs. con NETWR (Neto) >= 5,000 Dlls
+    " PERFORM DELETE_MENORA_5000Z.
+    PERFORM delete_menora_5000.
+  ENDIF.
+
+  LOOP AT it_alv INTO wa_alv.
+    "< BSCABLFRAN 02-09-2013
+    llavebanfn  = wa_alv-banfn.
+    llavepos    = wa_alv-bnfpo.
+    wa_alv-ebeln2 =   wa_alv-ebeln.
+
+    CALL FUNCTION 'CONVERSION_EXIT_ALPHA_INPUT'
+      EXPORTING
+        input  = llavebanfn
+      IMPORTING
+        output = llavebanfn.
+
+    CALL FUNCTION 'CONVERSION_EXIT_ALPHA_INPUT'
+      EXPORTING
+        input  = llavepos
+      IMPORTING
+        output = llavepos.
+    IF wa_alv-frgkz = '2'.
+      CONCATENATE sy-mandt llavebanfn llavepos INTO llavecambio.
+
+      SELECT
+             changenr
+             INTO CORRESPONDING FIELDS OF TABLE it_cdpos
+             FROM cdpos
+             WHERE
+               objectclas = 'BANF'
+               AND objectid = llavebanfn
+               AND tabname = 'EBAN'
+               AND tabkey = llavecambio
+               AND fname = 'FRGKZ'
+               AND value_new = '2'
+             .
+      IF sy-subrc  EQ 0.
+
+
+        SELECT
+            udate
+            utime
+            INTO CORRESPONDING FIELDS OF  TABLE it_cdhdr
+            FROM
+            cdhdr
+            FOR ALL ENTRIES IN it_cdpos
+            WHERE
+            objectclas = 'BANF' AND
+            objectid    = llavebanfn AND
+            changenr    = it_cdpos-changenr
+*    TCODE       = 'ME54N'
+            .
+
+        IF sy-subrc EQ 0.
+          SORT it_cdhdr BY udate DESCENDING utime DESCENDING.
+*
+          READ TABLE it_cdhdr INDEX 1.
+
+          wa_alv-flibe = it_cdhdr-udate.
+        ENDIF.
+      ENDIF.
+    ENDIF.
+
+*    ******estatus 5
+    "DEVK974548 BSCABOVELA OSS-140911-1141 - Toma de valores estauts de liberación "A"
+*    IF WA_ALV-FRGKZ = '5'.
+    IF wa_alv-frgkz = '5' OR wa_alv-frgkz = 'A'.
+
+
+      CONCATENATE sy-mandt llavebanfn llavepos INTO llavecambio.
+
+
+      SELECT
+        changenr
+        INTO CORRESPONDING FIELDS OF TABLE it_cdpos
+        FROM cdpos
+        WHERE
+          objectclas = 'BANF'
+          AND objectid = llavebanfn
+          AND tabname = 'EBAN'
+          AND tabkey = llavecambio
+          AND fname = 'FRGKZ'
+  "DEVK974548 BSCABOVELA OSS-140911-1141 - Toma de valores estauts de liberación "A"
+*          AND VALUE_NEW = '5'
+          AND ( value_new = '5' OR value_new = 'A' )
+        .
+
+      SELECT
+        udate
+        utime
+        INTO CORRESPONDING FIELDS OF  TABLE it_cdhdr
+        FROM
+        cdhdr
+        FOR ALL ENTRIES IN it_cdpos
+        WHERE
+        objectclas = 'BANF' AND
+        objectid    = llavebanfn AND
+        changenr    = it_cdpos-changenr
+*    TCODE       = 'ME54N'
+        .
+
+      IF sy-subrc EQ 0.
+        SORT it_cdhdr BY udate DESCENDING utime DESCENDING.
+*
+        READ TABLE it_cdhdr INDEX 1.
+
+        wa_alv-flibe = it_cdhdr-udate.
+      ENDIF.
+
+    ENDIF.
+    " BSCABLFRAN 02-09-2013 >
+
+    READ TABLE it_mblnr INTO wa_mblnr WITH KEY   "BSCABLFRAN
+    ebeln = wa_alv-ebeln
+    ebelp = wa_alv-ebelp
+    matnr = wa_alv-matnr.
+
+    IF sy-subrc = 0.
+      wa_alv-budat = wa_mblnr-budat.
+    ENDIF.
+*------------------------DEVK977405.BSCABOVELA------------------------*
+    READ TABLE lt_groes INTO lw_groes WITH KEY matnr = wa_alv-matnr.
+    IF sy-subrc EQ 0 AND lw_groes-groes IS NOT INITIAL.
+      wa_alv-noman = lw_groes-groes.
+    ELSE.
+*------------------------DEVK977405.BSCABOVELA------------------------*
+*-----------------------DEVK976411.BSCABOVELA-----------------------*
+      IF wa_alv-bednr IS INITIAL.
+        wa_alv-noman = wa_alv-ean11.
+      ELSE.
+        wa_alv-noman = wa_alv-bednr.
+      ENDIF.
+*-----------------------DEVK976411.BSCABOVELA-----------------------*
+    ENDIF. "DEVK977405.BSCABOVELA
+
+    "Quitar Ceros a la Izquierda del Material
+    CALL FUNCTION 'CONVERSION_EXIT_ALPHA_OUTPUT'
+      EXPORTING
+        input  = wa_alv-matnr
+      IMPORTING
+        output = wa_alv-matnr.
+
+    "Quitar Ceros a la Izquierda del Proveedor
+    CALL FUNCTION 'CONVERSION_EXIT_ALPHA_OUTPUT'
+      EXPORTING
+        input  = wa_alv-lifnr
+      IMPORTING
+        output = wa_alv-lifnr.
+
+    CALL FUNCTION 'CONVERSION_EXIT_CUNIT_OUTPUT'
+      EXPORTING
+        input         = wa_alv-meins
+       language       = sy-langu
+      IMPORTING
+*        long_text =
+        output        = wa_alv-meins
+*        short_text =
+      EXCEPTIONS
+        unit_not_found = 1
+        .
+
+    CALL FUNCTION 'CONVERSION_EXIT_CUNIT_OUTPUT'
+      EXPORTING
+        input         = wa_alv-meinsn
+       language       = sy-langu
+      IMPORTING
+*        long_text =
+        output        = wa_alv-meinsn
+*        short_text =
+      EXCEPTIONS
+        unit_not_found = 1
+        .
+*    AUTHORITY-CHECK OBJECT 'M_BEST_EKO' "bscablfran 16-oct-2013 cambios Roger.
+*             ID 'ACTVT' FIELD '9'
+*             ID 'EKORG' FIELD SO_ORGCO-LOW.
+*
+*      IF sy-subrc <> 0.
+*       wa_alv-netpr = ''.
+*      ENDIF.
+
+    IF wa_alv-pentr = 0 OR wa_alv-pentr IS INITIAL.
+      wa_alv-budat = ''.
+    ENDIF.
+
+    MODIFY it_alv FROM wa_alv TRANSPORTING matnr lifnr meins meinsn budat flibe netpr ebeln2 noman.
+
+  ENDLOOP.
+
+*====================== BSCABRSALI 16/12/2014 ============================
+*================= DEVK  / OSS-141215-1135 =========================
+  TYPES:
+
+  BEGIN OF ty_ekkn,
+  ebeln TYPE ekkn-ebeln ,
+  ebelp TYPE ekkn-ebelp ,
+  zekkn TYPE ekkn-zekkn ,
+  sakto TYPE ekkn-sakto ,
+  gsber TYPE c LENGTH 10 ,
+  kostl TYPE ekkn-kostl ,
+  kokrs TYPE ekkn-kokrs,
+  AUFNR TYPE ekkn-AUFNR,
+  END OF ty_ekkn,
+
+  BEGIN OF ty_skat,
+    spras TYPE skat-spras ,
+    ktopl TYPE skat-ktopl ,
+    saknr TYPE skat-saknr ,
+    txt20 TYPE skat-txt20 ,
+  END OF ty_skat,
+
+  BEGIN OF ty_csks,
+    kokrs TYPE csks-kokrs ,
+    kostl TYPE csks-kostl ,
+    datbi TYPE csks-datbi ,
+    mctxt TYPE cskt-mctxt ,
+  END OF ty_csks,
+
+  BEGIN OF ty_cskt,
+    spras TYPE cskt-spras ,
+    kokrs TYPE cskt-kokrs ,
+    kostl TYPE cskt-kostl ,
+    datbi TYPE cskt-datbi ,
+    mctxt TYPE cskt-mctxt ,
+  END OF ty_cskt.
+
+  DATA: ti_ekkn TYPE STANDARD TABLE OF ty_ekkn,
+        ti_skat TYPE STANDARD TABLE OF ty_skat,
+        ti_cskt TYPE STANDARD TABLE OF ty_cskt,
+        ti_csks TYPE STANDARD TABLE OF ty_csks.
+
+  FIELD-SYMBOLS: <fs_ekkn> TYPE ty_ekkn,
+                <fs_csks> TYPE ty_csks,
+                <fs_cskt> TYPE ty_cskt,
+                <fs_skat> TYPE ty_skat.
+
+
+
+  DATA: vl_ekkn TYPE c LENGTH 10.
+
+
+  SORT it_alv BY ebeln ebelp.
+
+  SELECT
+        ebeln
+        ebelp
+        zekkn
+        sakto
+        gsber
+        kostl
+        kokrs
+        AUFNR
+    FROM ekkn
+    INTO TABLE ti_ekkn
+    FOR ALL ENTRIES IN it_alv
+    WHERE ebeln = it_alv-ebeln
+      AND ebelp = it_alv-ebelp.
+
+  IF sy-subrc = 0.
+
+    LOOP AT ti_ekkn ASSIGNING <fs_ekkn>.
+
+      vl_ekkn = <fs_ekkn>-gsber.
+
+      CALL FUNCTION 'CONVERSION_EXIT_ALPHA_INPUT'
+        EXPORTING
+          input  = vl_ekkn
+        IMPORTING
+          output = vl_ekkn.
+
+      <fs_ekkn>-gsber = vl_ekkn.
+
+      CLEAR vl_ekkn.
+    ENDLOOP.
+
+    SELECT
+          spras
+          ktopl
+          saknr
+          txt20
+      FROM skat
+      INTO TABLE ti_skat
+      FOR ALL ENTRIES IN ti_ebkn
+      WHERE saknr = ti_ebkn-sakto
+        AND spras = sy-langu.
+
+
+    SELECT
+          kokrs
+          kostl
+          datbi
+      FROM csks
+      INTO CORRESPONDING FIELDS OF TABLE ti_csks
+      FOR ALL ENTRIES IN ti_ekkn
+      WHERE kokrs = ti_ekkn-kokrs
+        AND kostl = ti_ekkn-kostl .
+    IF sy-subrc = 0.
+
+      SELECT
+            spras
+            kokrs
+            kostl
+            datbi
+            mctxt
+        FROM cskt
+        INTO TABLE ti_cskt
+        FOR ALL ENTRIES IN ti_csks
+        WHERE spras = sy-langu
+          AND kokrs = ti_csks-kokrs
+          AND kostl = ti_csks-kostl .
+      IF sy-subrc = 0.
+        LOOP AT ti_csks ASSIGNING <fs_csks>.
+          READ TABLE ti_cskt ASSIGNING <fs_cskt> WITH KEY  spras = sy-langu
+          kokrs = <fs_csks>-kokrs
+          kostl = <fs_csks>-kostl .
+          IF sy-subrc = 0.
+            <fs_csks>-mctxt = <fs_cskt>-mctxt.
+          ENDIF.
+        ENDLOOP.
+      ENDIF.
+    ENDIF.
+
+
+    LOOP AT it_alv INTO wa_alv.
+
+
+      READ TABLE ti_ekkn ASSIGNING <fs_ekkn> WITH KEY    ebeln  = wa_alv-ebeln
+                                                         ebelp  = wa_alv-ebelp.
+      IF sy-subrc = 0.
+
+*====================== BSCABRSALI 05/11/2015 ============================
+*=================  DEVK985551 / OSS-151016-1710 =========================
+          wa_alv-AUFNR = <fs_ekkn>-aufnr.
+*===============================  Fin  ®==================================
+
+        READ TABLE ti_csks ASSIGNING <fs_csks> WITH KEY   kokrs = <fs_ekkn>-kokrs
+                                                          kostl = <fs_ekkn>-kostl .
+        IF sy-subrc = 0.
+          wa_alv-kostl = <fs_csks>-kostl.
+          wa_alv-mctxt = <fs_csks>-mctxt.
+        ENDIF.
+
+        READ TABLE ti_skat ASSIGNING <fs_skat> WITH KEY saknr = <fs_ekkn>-sakto.
+        IF sy-subrc = 0.
+          wa_alv-saknr = <fs_skat>-saknr.
+          wa_alv-txt20 = <fs_skat>-txt20.
+        ENDIF.
+
+        MODIFY it_alv FROM wa_alv.
+        CLEAR wa_alv.
+      ENDIF.
+
+
+
+      READ TABLE ti_t163y INTO wa_t163y WITH KEY pstyp = wa_alv-pstyp.
+      IF sy-subrc = 0.
+        wa_alv-ptext = wa_t163y-ptext.
+        MODIFY it_alv FROM wa_alv.
+        CLEAR: wa_alv,
+               wa_t163y.
+      ENDIF.
+
+
+
+    ENDLOOP.
+
+
+  ENDIF.
+
+*===============================  Fin  ®===================================
+
+
+ENDFORM.                    " TOMADATOS
+
+*&---------------------------------------------------------------------*
+*&      Form  EXCLUIR_BOTONES_AVL
+*&---------------------------------------------------------------------*
+FORM excluir_botones_avl  CHANGING p_pt_exclude.
+  DATA ls_exclude TYPE ui_func.
+
+  ls_exclude = cl_gui_alv_grid=>mc_fc_maximum .
+  APPEND ls_exclude TO pt_exclude.
+  ls_exclude = cl_gui_alv_grid=>mc_fc_minimum .
+  APPEND ls_exclude TO pt_exclude.
+*  ls_exclude = cl_gui_alv_grid=>mc_fc_subtot .
+*  APPEND ls_exclude TO pt_exclude.
+*  LS_EXCLUDE = CL_GUI_ALV_GRID=>MC_FC_SUM .
+*  APPEND LS_EXCLUDE TO PT_EXCLUDE.
+*  ls_exclude = cl_gui_alv_grid=>mc_fc_average .
+*  APPEND ls_exclude TO pt_exclude.
+*  ls_exclude = cl_gui_alv_grid=>mc_mb_sum .
+*  APPEND ls_exclude TO pt_exclude.
+*  ls_exclude = cl_gui_alv_grid=>mc_mb_subtot .
+*  APPEND ls_exclude TO pt_exclude.
+
+  ls_exclude = cl_gui_alv_grid=>mc_fc_loc_copy.
+  APPEND ls_exclude TO pt_exclude.
+  ls_exclude = cl_gui_alv_grid=>mc_fc_loc_copy_row.
+  APPEND ls_exclude TO pt_exclude.
+  ls_exclude = cl_gui_alv_grid=>mc_fc_loc_cut.
+  APPEND ls_exclude TO pt_exclude.
+  ls_exclude = cl_gui_alv_grid=>mc_fc_loc_delete_row.
+  APPEND ls_exclude TO pt_exclude.
+  ls_exclude = cl_gui_alv_grid=>mc_fc_loc_insert_row.
+  APPEND ls_exclude TO pt_exclude.
+  ls_exclude = cl_gui_alv_grid=>mc_fc_loc_paste.
+  APPEND ls_exclude TO pt_exclude.
+  ls_exclude = cl_gui_alv_grid=>mc_fc_loc_move_row.
+  APPEND ls_exclude TO pt_exclude.
+  ls_exclude = cl_gui_alv_grid=>mc_fc_loc_undo.
+  APPEND ls_exclude TO pt_exclude.
+  ls_exclude = cl_gui_alv_grid=>mc_fc_print.
+  APPEND ls_exclude TO pt_exclude.
+  ls_exclude = cl_gui_alv_grid=>mc_fc_print_prev.
+  APPEND ls_exclude TO pt_exclude.
+*  LS_EXCLUDE = CL_GUI_ALV_GRID=>MC_FC_LOC_MOVE_ROW.
+*  APPEND LS_EXCLUDE TO PT_EXCLUDE.
+*  LS_EXCLUDE = CL_GUI_ALV_GRID=>MC_FC_LOC_MOVE_ROW.
+*  APPEND LS_EXCLUDE TO PT_EXCLUDE.
+
+*====================== BSCABRSALI 09/02/2015 ============================
+*================= DEVK979005  / OSS-150120-1114 =========================
+  CLEAR ls_exclude.
+  ls_exclude = cl_gui_alv_grid=>mc_mb_export.
+  APPEND ls_exclude TO pt_exclude.
+*===============================  Fin  ®===================================
+ENDFORM.                    " EXCLUIR_BOTONES_AVL
+
+*&---------------------------------------------------------------------*
+*&      Form  PREPARE_FIELD_CATALOG
+*&---------------------------------------------------------------------*
+FORM prepare_field_catalog  CHANGING p_fieldcat TYPE lvc_t_fcat.
+
+
+  DATA ls_fcat TYPE lvc_s_fcat.
+
+  ls_fcat-fieldname = 'EKORG'.
+  ls_fcat-inttype   = 'C'.
+  ls_fcat-key       = 'X'.
+  ls_fcat-outputlen = '11'.
+  ls_fcat-coltext   = text-015.
+  ls_fcat-seltext   = text-015.
+  ls_fcat-scrtext_m = text-087. "DEVK986116.BSCABOVELA
+  APPEND ls_fcat TO p_fieldcat.
+  CLEAR ls_fcat.
+
+*====================== BSCABRSALI 20/05/2015 ============================
+*================= DEVK981720  / OSS-150519-1748 =========================
+  ls_fcat-fieldname = 'LOEKZ'.
+  ls_fcat-inttype   = 'C'.
+  ls_fcat-key       = 'X'.
+  ls_fcat-outputlen = '11'.
+  ls_fcat-checkbox  = 'X'.
+  ls_fcat-coltext   = text-075.
+  ls_fcat-seltext   = text-075.
+  ls_fcat-scrtext_m = text-075.
+  APPEND ls_fcat TO p_fieldcat.
+  CLEAR ls_fcat.
+*===============================  Fin  ®==================================
+
+
+
+*====================== BSCABRSALI 19/12/2014 ============================
+*================= DEVK977679  / OSS-141121-1842 =========================
+  ls_fcat-fieldname = 'PTEXT'. "PSTYP'.
+  ls_fcat-inttype   = 'C'.
+  ls_fcat-outputlen = '20'.
+  ls_fcat-key = 'X'.
+  ls_fcat-seltext   = text-064.
+  ls_fcat-scrtext_l = text-064. " Denominador de campo largo
+  ls_fcat-scrtext_m = text-066. " Denominador de campo mediano
+  ls_fcat-scrtext_s = text-067. " Denominador de campo breve
+  APPEND ls_fcat TO p_fieldcat.
+  CLEAR ls_fcat.
+
+  ls_fcat-fieldname = 'KNTTP'.
+  ls_fcat-inttype   = 'C'.
+  ls_fcat-outputlen = '7'.
+  ls_fcat-key = 'X'.
+  ls_fcat-seltext   = text-065.
+  ls_fcat-scrtext_l = text-065. " Denominador de campo largo
+  ls_fcat-scrtext_m = text-068. " Denominador de campo mediano
+  ls_fcat-scrtext_s = text-069. " Denominador de campo breve
+  APPEND ls_fcat TO p_fieldcat.
+  CLEAR ls_fcat.
+*===============================  Fin  ®===================================
+
+  ls_fcat-fieldname = 'EBELN2'.
+  ls_fcat-inttype   = 'C'.
+  ls_fcat-key       = 'X'.
+  ls_fcat-outputlen = '10'.
+  ls_fcat-coltext   = text-016.
+  ls_fcat-seltext   = text-016.
+  ls_fcat-scrtext_m = text-016.
+  APPEND ls_fcat TO p_fieldcat.
+
+  CLEAR ls_fcat.
+  ls_fcat-fieldname = 'BANFN'.
+  ls_fcat-inttype   = 'C'.
+  ls_fcat-outputlen = 11.
+  ls_fcat-coltext  = text-017.
+  ls_fcat-seltext = text-017.
+  ls_fcat-scrtext_m = text-088."DEVK986116.BSCABOVELA
+  APPEND ls_fcat TO p_fieldcat.
+
+  CLEAR ls_fcat.
+  ls_fcat-fieldname = 'BSART'.
+  ls_fcat-inttype   = 'C'.
+  ls_fcat-outputlen = '10'.
+  ls_fcat-coltext   = text-018.
+  ls_fcat-seltext   = text-018.
+  ls_fcat-scrtext_m = text-018.
+  APPEND ls_fcat TO p_fieldcat.
+
+  CLEAR ls_fcat.
+  ls_fcat-fieldname = 'AEDAT'.
+  ls_fcat-datatype = 'DATS'.
+  ls_fcat-inttype   = 'D'.
+  ls_fcat-outputlen = '17'.
+  ls_fcat-coltext  = text-019.
+  ls_fcat-seltext = text-019.
+  ls_fcat-scrtext_m = text-089."DEVK986116.BSCABOVELA
+  APPEND ls_fcat TO p_fieldcat.
+
+  CLEAR ls_fcat.
+  ls_fcat-fieldname = 'EINDT'.
+  ls_fcat-datatype = 'DATS'.
+  ls_fcat-inttype   = 'D'.
+  ls_fcat-outputlen = '17'.
+  ls_fcat-coltext = text-020.
+  ls_fcat-seltext = text-020.
+  ls_fcat-scrtext_m = text-090."DEVK986116.BSCABOVELA
+  APPEND ls_fcat TO p_fieldcat.
+
+  CLEAR ls_fcat.
+  ls_fcat-fieldname = 'FRGKE'.
+  ls_fcat-inttype   = 'C'.
+  ls_fcat-outputlen = '7'.
+  ls_fcat-coltext   = text-021.
+  ls_fcat-seltext   = text-021.
+  ls_fcat-scrtext_m = text-021.
+  APPEND ls_fcat TO p_fieldcat.
+
+  CLEAR ls_fcat.
+*FIN BSCABJDELG DEVK951382 26/11/2012
+  ls_fcat-fieldname = 'FRGCT'.
+  ls_fcat-inttype   = 'C'.
+  ls_fcat-outputlen = 20.
+  ls_fcat-coltext  = text-022.
+  ls_fcat-seltext  = text-022.
+  ls_fcat-scrtext_m = text-091."DEVK986116.BSCABOVELA
+  APPEND ls_fcat TO p_fieldcat.
+*FIN BSCABJDELG DEVK951382 26/11/2012
+
+  CLEAR ls_fcat.
+  ls_fcat-fieldname = 'LIFNR'.
+  ls_fcat-inttype   = 'C'.
+  ls_fcat-outputlen = 10.
+  ls_fcat-coltext  = text-023.
+  ls_fcat-seltext = text-023.
+  ls_fcat-scrtext_m = text-023.
+  APPEND ls_fcat TO p_fieldcat.
+
+  CLEAR ls_fcat.
+  ls_fcat-fieldname = 'NAME1'.
+  ls_fcat-inttype   = 'C'.
+  ls_fcat-outputlen = 35.
+  ls_fcat-coltext   = text-024.
+  ls_fcat-seltext   = text-024.
+  ls_fcat-scrtext_m = text-092."DEVK986116.BSCABOVELA
+  APPEND ls_fcat TO p_fieldcat.
+
+  CLEAR ls_fcat.
+  ls_fcat-fieldname = 'EKGRP'.
+  ls_fcat-inttype   = 'C'.
+  ls_fcat-outputlen = '15'.
+  ls_fcat-coltext   = text-025.
+  ls_fcat-seltext   = text-025.
+  ls_fcat-scrtext_m = text-093."DEVK986116.BSCABOVELA
+  APPEND ls_fcat TO p_fieldcat.
+*-----------------------DEVK976411.BSCABOVELA-----------------------*
+  CLEAR ls_fcat.
+  ls_fcat-fieldname = 'NOMAN'.
+  ls_fcat-inttype   = 'C'.
+  ls_fcat-outputlen = 18.
+  ls_fcat-coltext  = text-063.
+  ls_fcat-seltext = text-063.
+  ls_fcat-scrtext_m = text-094."DEVK986116.BSCABOVELA
+  APPEND ls_fcat TO p_fieldcat.
+*-----------------------DEVK976411.BSCABOVELA-----------------------*
+
+*====================== BSCABRSALI DD/MM/20AA ============================
+*================= DEVK  / OSS-150129-1215 =========================
+  CLEAR ls_fcat.
+  ls_fcat-fieldname = 'IDNLF'. " Número de material del proveedor
+  ls_fcat-inttype   = 'C'.
+  ls_fcat-outputlen = 35.
+  ls_fcat-coltext   = text-070.
+  ls_fcat-seltext   = text-070.
+  ls_fcat-scrtext_m = text-070.
+  APPEND ls_fcat TO p_fieldcat.
+*===============================  Fin  ®===================================
+*-----------------------DEVK984748.BSCABOVELA-----------------------*
+  CLEAR ls_fcat.
+  ls_fcat-fieldname = 'EBELP'.
+  ls_fcat-ref_table = 'EKPO'.
+  APPEND ls_fcat TO p_fieldcat.
+*-----------------------DEVK984748.BSCABOVELA-----------------------*
+  CLEAR ls_fcat.
+  ls_fcat-fieldname = 'MATNR'.
+  ls_fcat-inttype   = 'C'.
+  ls_fcat-outputlen = 18.
+  ls_fcat-coltext   = text-026.
+  ls_fcat-seltext   = text-026.
+  ls_fcat-scrtext_m = text-026.
+  APPEND ls_fcat TO p_fieldcat.
+
+  CLEAR ls_fcat.
+  ls_fcat-fieldname = 'TXZ01'.
+  ls_fcat-inttype   = 'C'.
+  ls_fcat-outputlen = 40.
+  ls_fcat-coltext   = text-027.
+  ls_fcat-seltext   = text-027.
+  ls_fcat-scrtext_m = text-095."DEVK986116.BSCABOVELA
+  APPEND ls_fcat TO p_fieldcat.
+
+  CLEAR ls_fcat.
+  ls_fcat-fieldname = 'TEXTP'.
+  ls_fcat-inttype   = 'C'.
+  ls_fcat-outputlen = 132.
+*  LS_FCAT-ICON     = 'X'.
+  ls_fcat-coltext   = text-028.
+  ls_fcat-seltext   = text-028.
+  ls_fcat-scrtext_m = text-096."DEVK986116.BSCABOVELA
+  APPEND ls_fcat TO p_fieldcat.
+
+*------------------------DEVK977849.BSCABOVELA------------------------*
+  CLEAR ls_fcat.
+  ls_fcat-fieldname = 'NETWR'.  "DEVK989482.BSCABOVELA
+  ls_fcat-ref_table = 'EKPO'.  "DEVK989482.BSCABOVELA
+  ls_fcat-ref_field = 'NETWR'.  "DEVK989482.BSCABOVELA
+*  LS_FCAT-FIELDNAME = 'NETPR'.
+*  ls_fcat-just = 'R'.          "DEVK989482.BSCABOVELA
+*------------------------DEVK977849.BSCABOVELA------------------------*
+*  ls_fcat-inttype   = 'C'.     "DEVK989482.BSCABOVELA
+  ls_fcat-outputlen = 10.
+  ls_fcat-coltext   = text-029.
+  ls_fcat-seltext   = text-029.
+  ls_fcat-scrtext_m = text-029.
+  APPEND ls_fcat TO p_fieldcat.
+
+  CLEAR ls_fcat.
+  ls_fcat-fieldname = 'WAERS'.
+  ls_fcat-datatype = 'CUKY'.
+  ls_fcat-inttype   = 'C'.
+  ls_fcat-outputlen = 5.
+  ls_fcat-coltext  = text-034.
+  ls_fcat-seltext = text-034.
+  ls_fcat-scrtext_m = text-034.
+  APPEND ls_fcat TO p_fieldcat.
+
+  CLEAR ls_fcat.
+  ls_fcat-fieldname = 'MENGE'.
+  IF p_par EQ 'X'.
+    ls_fcat-emphasize  = 'C500'.
+  ENDIF.
+  ls_fcat-inttype   = 'P'.
+  ls_fcat-decimals = '3'.
+  ls_fcat-outputlen = 16.
+  ls_fcat-coltext  = text-031.
+  ls_fcat-seltext = text-031.
+  ls_fcat-scrtext_m = text-097."DEVK986116.BSCABOVELA
+  APPEND ls_fcat TO p_fieldcat.
+
+  CLEAR ls_fcat.
+  ls_fcat-fieldname = 'MEINS'.
+  ls_fcat-datatype = 'UNIT'.
+  ls_fcat-inttype   = 'C'.
+  ls_fcat-outputlen = '8'.
+  ls_fcat-no_convext ='X'.
+  ls_fcat-coltext  = text-032.
+  ls_fcat-seltext = text-032.
+  ls_fcat-scrtext_m = text-032.
+  APPEND ls_fcat TO p_fieldcat.
+
+*------------------------DEVK977849.BSCABOVELA------------------------*
+  CLEAR ls_fcat.
+  ls_fcat-fieldname = 'NETSR'.
+*  LS_FCAT-FIELDNAME = 'NETWR'.
+  ls_fcat-just = 'R'.
+*------------------------DEVK977849.BSCABOVELA------------------------*
+*  LS_FCAT-datatype = 'CURR'.
+  IF p_par EQ 'X'.
+    ls_fcat-emphasize  = 'C500'.
+  ENDIF.
+  ls_fcat-inttype   = 'P'.
+  ls_fcat-decimals  = '2'.
+  ls_fcat-outputlen = 13.
+  ls_fcat-coltext  = text-033.
+  ls_fcat-seltext = text-033.
+  ls_fcat-scrtext_m = text-033.
+  APPEND ls_fcat TO p_fieldcat.
+
+  CLEAR ls_fcat.
+  ls_fcat-fieldname = 'WAERSN'.
+  ls_fcat-datatype  = 'CUKY'.
+  ls_fcat-inttype   = 'C'.
+  ls_fcat-outputlen = 5.
+  ls_fcat-coltext   = text-034.
+  ls_fcat-seltext   = text-034.
+  ls_fcat-scrtext_m = text-034.
+  APPEND ls_fcat TO p_fieldcat.
+
+  CLEAR ls_fcat.
+  ls_fcat-fieldname = 'WKURS'.
+  ls_fcat-datatype  = 'DEC'.
+  ls_fcat-decimals  = '5'.
+  ls_fcat-outputlen = 9.
+  ls_fcat-coltext   = text-035.
+  ls_fcat-seltext   = text-035.
+  ls_fcat-scrtext_m = text-098."DEVK986116.BSCABOVELA
+  APPEND ls_fcat TO p_fieldcat.
+
+******************************************************************
+* BSCABJALME    OSS-140502-1157   02/05/2014
+  CLEAR ls_fcat.
+  ls_fcat-fieldname = 'PENTR'.
+  IF p_par EQ 'X'.
+    ls_fcat-emphasize  = 'C500'.
+  ENDIF.
+  ls_fcat-inttype   = 'P'.
+  ls_fcat-decimals  = '3'.
+  ls_fcat-outputlen = 16.
+  ls_fcat-coltext   = text-036.
+  ls_fcat-seltext   = text-036.
+  ls_fcat-scrtext_m = text-036.
+  APPEND ls_fcat TO p_fieldcat.
+
+
+******************************************************************
+  CLEAR ls_fcat.
+  ls_fcat-fieldname = 'OBMNG'.
+
+  ls_fcat-inttype   = 'P'.
+  ls_fcat-decimals  = '3'.
+  ls_fcat-outputlen = 13.
+  ls_fcat-coltext   = text-037.
+  ls_fcat-seltext   = text-037.
+  ls_fcat-scrtext_m = text-099."DEVK986116.BSCABOVELA
+  APPEND ls_fcat TO p_fieldcat.
+
+  CLEAR ls_fcat.
+  ls_fcat-fieldname = 'BUDAT'.  "BSCABLFRAN >>>
+  IF p_par EQ 'X'.
+    ls_fcat-emphasize  = 'C500'.
+  ENDIF.
+  ls_fcat-datatype  = 'DATS'.
+  ls_fcat-inttype   = 'D'.
+  ls_fcat-outputlen = 10.
+  ls_fcat-coltext   = text-051.
+  ls_fcat-seltext   = text-051.
+  ls_fcat-scrtext_m = text-100."DEVK986116.BSCABOVELA
+  APPEND ls_fcat TO p_fieldcat. "<<< bscablfran
+
+  CLEAR ls_fcat.
+  ls_fcat-fieldname = 'MEINSN'.
+  ls_fcat-datatype = 'UNIT'.
+  ls_fcat-inttype   = 'C'.
+  ls_fcat-no_convext ='X'.
+  ls_fcat-outputlen = '8'.
+  ls_fcat-coltext  = text-032.
+  ls_fcat-seltext = text-032.
+  ls_fcat-scrtext_m = text-032.
+  APPEND ls_fcat TO p_fieldcat.
+
+  CLEAR ls_fcat.
+  ls_fcat-fieldname = 'ZTER2'.
+  ls_fcat-inttype   = 'C'.
+  ls_fcat-outputlen = 15.
+  ls_fcat-coltext  = text-038.
+  ls_fcat-seltext = text-038.
+  ls_fcat-scrtext_m = text-101."DEVK986116.BSCABOVELA
+  APPEND ls_fcat TO p_fieldcat.
+
+  IF p_ga = 'X'.
+    IF g_cond_max >= 1.
+      CLEAR ls_fcat.
+      ls_fcat-fieldname = 'KSCHLC1'.
+      ls_fcat-inttype   = 'C'.
+      ls_fcat-outputlen = 4.
+      ls_fcat-coltext  = text-039.
+      ls_fcat-seltext = text-039.
+      ls_fcat-scrtext_m = text-102."DEVK986116.BSCABOVELA
+      APPEND ls_fcat TO p_fieldcat.
+
+      CLEAR ls_fcat.
+      ls_fcat-fieldname = 'VTEXTC1'.
+      ls_fcat-inttype   = 'C'.
+      ls_fcat-outputlen = 20.
+      ls_fcat-coltext  = text-040.
+      ls_fcat-seltext = text-040.
+      ls_fcat-scrtext_m = text-103."DEVK986116.BSCABOVELA
+      APPEND ls_fcat TO p_fieldcat.
+
+      CLEAR ls_fcat.
+      ls_fcat-fieldname = 'KBETRC1'.
+*      LS_FCAT-datatype  = 'CUKY'.
+      ls_fcat-inttype   = 'p'.
+      ls_fcat-decimals  = '2'.
+      ls_fcat-outputlen = 11.
+      ls_fcat-coltext   = text-041.
+      ls_fcat-seltext   = text-041.
+      ls_fcat-scrtext_m = text-041.
+      APPEND ls_fcat TO p_fieldcat.
+
+      CLEAR ls_fcat.
+      ls_fcat-fieldname = 'WAERSC1'.
+*      LS_FCAT-datatype  = 'CUKY'.
+      ls_fcat-inttype   = 'p'.
+      ls_fcat-decimals  = '2'.
+      ls_fcat-outputlen = 11.
+      ls_fcat-coltext   = text-042.
+      ls_fcat-seltext   = text-042.
+      ls_fcat-scrtext_m = text-042.
+      APPEND ls_fcat TO p_fieldcat.
+    ENDIF.
+
+
+    IF g_cond_max >= 2.
+      CLEAR ls_fcat.
+      ls_fcat-fieldname = 'KSCHLC2'.
+      ls_fcat-inttype   = 'C'.
+      ls_fcat-outputlen = 4.
+      ls_fcat-outputlen = 5.
+      ls_fcat-coltext  = text-039.
+      ls_fcat-seltext = text-039.
+      ls_fcat-scrtext_m = text-102."DEVK986116.BSCABOVELA
+      APPEND ls_fcat TO p_fieldcat.
+
+      CLEAR ls_fcat.
+      ls_fcat-fieldname = 'VTEXTC2'.
+      ls_fcat-inttype   = 'C'.
+      ls_fcat-outputlen = 20.
+      ls_fcat-coltext  = text-040.
+      ls_fcat-seltext = text-040.
+      ls_fcat-scrtext_m = text-103."DEVK986116.BSCABOVELA
+      APPEND ls_fcat TO p_fieldcat.
+
+      CLEAR ls_fcat.
+      ls_fcat-fieldname = 'KBETRC2'.
+*      LS_FCAT-datatype  = 'CUKY'.
+      ls_fcat-inttype   = 'p'.
+      ls_fcat-decimals  = '2'.
+      ls_fcat-outputlen = 11.
+      ls_fcat-coltext  = text-041.
+      ls_fcat-seltext = text-041.
+      ls_fcat-scrtext_m = text-041.
+      APPEND ls_fcat TO p_fieldcat.
+
+      CLEAR ls_fcat.
+      ls_fcat-fieldname = 'WAERSC2'.
+*      LS_FCAT-datatype  = 'CUKY'.
+      ls_fcat-inttype   = 'p'.
+      ls_fcat-decimals  = '2'.
+      ls_fcat-outputlen = 11.
+      ls_fcat-coltext  = text-042.
+      ls_fcat-seltext = text-042.
+      ls_fcat-scrtext_m = text-042.
+      APPEND ls_fcat TO p_fieldcat.
+    ENDIF.
+
+    IF g_cond_max >= 3.
+      CLEAR ls_fcat.
+      ls_fcat-fieldname = 'KSCHLC3'.
+      ls_fcat-inttype   = 'C'.
+      ls_fcat-outputlen = 4.
+      ls_fcat-outputlen = 5.
+      ls_fcat-coltext  = text-039.
+      ls_fcat-seltext = text-039.
+      ls_fcat-scrtext_m = text-102."DEVK986116.BSCABOVELA
+      APPEND ls_fcat TO p_fieldcat.
+      CLEAR ls_fcat.
+      ls_fcat-fieldname = 'VTEXTC3'.
+      ls_fcat-inttype   = 'C'.
+      ls_fcat-outputlen = 20.
+      ls_fcat-coltext  = text-040.
+      ls_fcat-seltext = text-040.
+      ls_fcat-scrtext_m = text-103."DEVK986116.BSCABOVELA
+      APPEND ls_fcat TO p_fieldcat.
+
+      CLEAR ls_fcat.
+      ls_fcat-fieldname = 'KBETRC3'.
+*      LS_FCAT-datatype  = 'CUKY'.
+      ls_fcat-inttype   = 'p'.
+      ls_fcat-decimals  = '2'.
+      ls_fcat-outputlen = 11.
+      ls_fcat-coltext   = text-041.
+      ls_fcat-seltext   = text-041.
+      ls_fcat-scrtext_m = text-041.
+      APPEND ls_fcat TO p_fieldcat.
+
+      CLEAR ls_fcat.
+      ls_fcat-fieldname = 'WAERSC3'.
+      ls_fcat-datatype  = 'CUKY'.
+      ls_fcat-inttype   = 'C'.
+      ls_fcat-outputlen = 5.
+      ls_fcat-coltext   = text-042.
+      ls_fcat-seltext   = text-042.
+      ls_fcat-scrtext_m = text-042.
+      APPEND ls_fcat TO p_fieldcat.
+    ENDIF.
+
+    IF g_cond_max >= 4.
+      CLEAR ls_fcat.
+      ls_fcat-fieldname = 'KSCHLC4'.
+      ls_fcat-inttype   = 'C'.
+      ls_fcat-outputlen = 4.
+      ls_fcat-coltext  = text-039.
+      ls_fcat-seltext = text-039.
+      ls_fcat-scrtext_m = text-102."DEVK986116.BSCABOVELA
+      APPEND ls_fcat TO p_fieldcat.
+      CLEAR ls_fcat.
+      ls_fcat-fieldname = 'VTEXTC4'.
+      ls_fcat-inttype   = 'C'.
+      ls_fcat-outputlen = 20.
+      ls_fcat-coltext  = text-040.
+      ls_fcat-seltext = text-040.
+      ls_fcat-scrtext_m = text-103."DEVK986116.BSCABOVELA
+      APPEND ls_fcat TO p_fieldcat.
+
+      CLEAR ls_fcat.
+      ls_fcat-fieldname = 'KBETRC4'.
+*      LS_FCAT-datatype  = 'CUKY'.
+      ls_fcat-inttype   = 'p'.
+      ls_fcat-decimals  = '2'.
+      ls_fcat-outputlen = 11.
+      ls_fcat-coltext   = text-041.
+      ls_fcat-seltext   = text-041.
+      ls_fcat-scrtext_m = text-041.
+      APPEND ls_fcat TO p_fieldcat.
+
+      CLEAR ls_fcat.
+      ls_fcat-fieldname = 'WAERSC4'.
+*      LS_FCAT-datatype  = 'CUKY'.
+      ls_fcat-inttype   = 'p'.
+      ls_fcat-decimals  = '2'.
+      ls_fcat-outputlen = 5.
+      ls_fcat-coltext   = text-042.
+      ls_fcat-seltext   = text-042.
+      ls_fcat-scrtext_m = text-042.
+      APPEND ls_fcat TO p_fieldcat.
+    ENDIF.
+
+  ENDIF.
+
+  CLEAR ls_fcat.
+
+
+  ls_fcat-fieldname = 'ERNAMT'.
+  ls_fcat-inttype   = 'C'.
+  ls_fcat-outputlen = 40.
+  ls_fcat-just      = 'C'.
+  ls_fcat-coltext  = text-045.
+  ls_fcat-seltext = text-045.
+  ls_fcat-scrtext_m = text-104."DEVK986116.BSCABOVELA
+  APPEND ls_fcat TO p_fieldcat.
+
+  CLEAR ls_fcat.
+  ls_fcat-fieldname = 'DATVR'.
+  ls_fcat-datatype = 'DATS'.
+  ls_fcat-inttype   = 'D'.
+  ls_fcat-outputlen = 10.
+  ls_fcat-coltext  = text-046.
+  ls_fcat-seltext = text-046.
+  ls_fcat-scrtext_m = text-105."DEVK986116.BSCABOVELA
+  APPEND ls_fcat TO p_fieldcat.
+
+  CLEAR ls_fcat.
+  ls_fcat-fieldname = 'UDATE'.
+  ls_fcat-datatype = 'DATS'.
+  ls_fcat-inttype   = 'D'.
+  ls_fcat-outputlen = 10.
+  ls_fcat-coltext  = text-047.
+  ls_fcat-seltext =  text-047.
+  ls_fcat-scrtext_m = text-106."DEVK986116.BSCABOVELA
+  APPEND ls_fcat TO p_fieldcat.
+
+  CLEAR ls_fcat.
+  ls_fcat-fieldname = 'BADAT'. "BSCABLFRAN 13-08-2013
+  ls_fcat-datatype = 'DATS'.
+  ls_fcat-inttype   = 'D'.
+  ls_fcat-outputlen = 10.
+  ls_fcat-coltext  =  text-048.
+  ls_fcat-seltext =   text-048.
+  ls_fcat-scrtext_m = text-107."DEVK986116.BSCABOVELA
+  APPEND ls_fcat TO p_fieldcat.
+
+  CLEAR ls_fcat.
+  ls_fcat-fieldname = 'FLIBE'. "BSCABLFRAN 13-08-2013
+  ls_fcat-datatype = 'DATS'.
+  ls_fcat-inttype   = 'D'.
+  ls_fcat-outputlen = 10.
+  ls_fcat-coltext  =  text-049.
+  ls_fcat-seltext =   text-049.
+  ls_fcat-scrtext_m = text-108."DEVK986116.BSCABOVELA
+  APPEND ls_fcat TO p_fieldcat.
+
+*  CLEAR ls_fcat.
+*  ls_fcat-fieldname = 'SAKTO'. "BSCABLFRAN 13-08-2013
+*  LS_FCAT-INTTYPE   = 'C'.
+*  ls_fcat-outputlen = 10.
+*  ls_fcat-coltext   =  text-050.
+*  ls_fcat-seltext   =  text-050.
+*  ls_fcat-scrtext_m = text-050.
+*  APPEND ls_fcat TO p_fieldcat.
+
+*====================== BSCABRSALI 16/12/2014 ============================
+*================= DEVK  / OSS-141215-1135 =========================
+  CLEAR ls_fcat.
+  ls_fcat-fieldname   = 'KOSTL'.
+  ls_fcat-inttype     = 'C'.
+  ls_fcat-coltext     = text-076.
+  ls_fcat-seltext     = text-076.
+  ls_fcat-scrtext_m   = text-077.
+  ls_fcat-outputlen   = '10'.
+  APPEND ls_fcat TO p_fieldcat.
+
+  CLEAR ls_fcat.
+  ls_fcat-fieldname   = 'MCTXT'.
+  ls_fcat-inttype     = 'C'.
+  ls_fcat-coltext     = text-078.
+  ls_fcat-seltext     = text-078.
+  ls_fcat-scrtext_m   = text-079.
+  ls_fcat-outputlen   = '20'.
+  APPEND ls_fcat TO p_fieldcat.
+
+
+  CLEAR ls_fcat.
+  ls_fcat-fieldname   = 'SAKNR'.
+  ls_fcat-inttype     = 'C'.
+  ls_fcat-coltext     = text-080.
+  ls_fcat-seltext     = text-080.
+  ls_fcat-scrtext_m   = text-050.
+  ls_fcat-outputlen   = '10'.
+  APPEND ls_fcat TO p_fieldcat.
+
+
+  CLEAR ls_fcat.
+  ls_fcat-fieldname   = 'TXT20'.
+  ls_fcat-inttype     = 'C'.
+  ls_fcat-coltext     = text-081.
+  ls_fcat-seltext     = text-081.
+  ls_fcat-scrtext_m   = text-082.
+  ls_fcat-outputlen   = '20'.
+  APPEND ls_fcat TO p_fieldcat.
+
+*===============================  Fin  ®===================================
+
+  CLEAR ls_fcat.
+  ls_fcat-fieldname = 'RESWK'.
+  ls_fcat-inttype   = 'C'.
+  ls_fcat-outputlen = '20'.
+  ls_fcat-coltext   =  text-052.
+  ls_fcat-seltext   =  text-052.
+  ls_fcat-scrtext_m = text-109."DEVK986116.BSCABOVELA
+  APPEND ls_fcat TO p_fieldcat.
+
+*-----------------------DEVK980031.BSCABOVELA-----------------------*
+  CLEAR ls_fcat.
+  ls_fcat-fieldname = 'KDATB'.
+  ls_fcat-datatype = 'DATS'.
+  ls_fcat-inttype   = 'D'.
+  ls_fcat-outputlen = 10.
+  ls_fcat-coltext   = text-071.
+  ls_fcat-seltext   = text-071.
+  ls_fcat-scrtext_m = text-071.
+  APPEND ls_fcat TO p_fieldcat.
+
+  CLEAR ls_fcat.
+  ls_fcat-fieldname = 'KDATE'.
+  ls_fcat-datatype = 'DATS'.
+  ls_fcat-inttype   = 'D'.
+  ls_fcat-outputlen = 10.
+  ls_fcat-coltext   = text-072.
+  ls_fcat-seltext   = text-072.
+  ls_fcat-scrtext_m = text-072.
+  APPEND ls_fcat TO p_fieldcat.
+
+
+  CLEAR ls_fcat.
+  ls_fcat-fieldname = 'WEBRE'.
+  ls_fcat-inttype   = 'C'.
+  ls_fcat-outputlen = '20'.
+  ls_fcat-coltext   =  text-073.
+  ls_fcat-seltext   =  text-073.
+  ls_fcat-scrtext_m = text-110."DEVK986116.BSCABOVELA
+  APPEND ls_fcat TO p_fieldcat.
+*-----------------------DEVK980031.BSCABOVELA-----------------------*
+*------------------------DEVK984797.BSCABOVELA------------------------*
+  CLEAR ls_fcat.
+  ls_fcat-fieldname   = 'ADPRX'.
+  ls_fcat-coltext     = text-083.
+  ls_fcat-seltext     = text-083.
+  ls_fcat-scrtext_m   = text-083.
+  ls_fcat-outputlen   = '30'.
+  APPEND ls_fcat TO p_fieldcat.
+*------------------------DEVK984797.BSCABOVELA------------------------*
+
+
+*====================== BSCABRSALI 05/11/2015 ============================
+*=================  DEVK985551 / OSS-151016-1710 =========================
+  CLEAR ls_fcat.
+  ls_fcat-fieldname   = 'AUFNR'.
+  ls_fcat-coltext     = TEXT-084.
+  ls_fcat-seltext     = TEXT-084.
+  ls_fcat-scrtext_m   = TEXT-084.
+  ls_fcat-outputlen   = '15'.
+  ls_fcat-LZERO       = 'X'.
+  APPEND ls_fcat TO p_fieldcat.
+
+  CLEAR ls_fcat.
+  ls_fcat-fieldname   = 'AFNAM'.
+  ls_fcat-coltext     = TEXT-085.
+  ls_fcat-seltext     = TEXT-085.
+  ls_fcat-scrtext_m   = TEXT-085.
+  ls_fcat-outputlen   = '15'.
+  APPEND ls_fcat TO p_fieldcat.
+*===============================  Fin  ®==================================
+*-----------------------DEVK985562.BSCABOVELA--------------------------*
+  ls_fcat-fieldname = 'HDRTX'.
+  ls_fcat-inttype   = 'C'.
+  ls_fcat-outputlen = '35'.
+  ls_fcat-coltext   = text-086.
+  ls_fcat-seltext   = text-086.
+  ls_fcat-scrtext_l = text-086. " Denominador de campo largo
+  ls_fcat-scrtext_m = text-086. " Denominador de campo mediano
+  ls_fcat-scrtext_s = text-086. " Denominador de campo breve
+  ls_fcat-intlen    = 132.
+  APPEND ls_fcat TO p_fieldcat.
+  CLEAR ls_fcat.
+*-----------------------DEVK985562.BSCABOVELA--------------------------*
+
+  ls_fcat-fieldname = 'BWTAR'.
+  ls_fcat-inttype   = 'C'.
+  ls_fcat-outputlen = '10'.
+  ls_fcat-coltext   = TEXT-114.
+  ls_fcat-seltext   = TEXT-114.
+  ls_fcat-intlen    = 132.
+  APPEND ls_fcat TO p_fieldcat.
+  CLEAR ls_fcat.
+ENDFORM.                    " PREPARE_FIELD_CATALOG
+
+*&---------------------------------------------------------------------*
+*&      Form  PREPARE_LAYOUT
+*&---------------------------------------------------------------------*
+FORM prepare_layout  CHANGING ps_layout TYPE lvc_s_layo.
+  DATA: num(4),
+        titulo(30),
+        vl_texto TYPE c LENGTH 22.
+  IF p_par EQ 'X'.
+    DESCRIBE TABLE it_alv2 LINES num.
+  ELSE.
+    DESCRIBE TABLE it_alv LINES num.
+  ENDIF.
+
+
+  IF sy-langu = 'E'.
+    vl_texto = 'Entries Found:'.
+  ELSEIF sy-langu = 'S'.
+    vl_texto = 'Registros encontrados:'.
+  ENDIF.
+
+  CONCATENATE vl_texto num INTO titulo SEPARATED BY space.
+
+  ps_layout-zebra = 'X' .
+  ps_layout-grid_title = titulo.
+  ps_layout-smalltitle = 'X' .
+*  PS_LAYOUT-NUMC_TOTAL = 'X' .
+ENDFORM.                    " PREPARE_LAYOUT
+
+*&---------------------------------------------------------------------*
+*&      Form  ORGANIZACAMPOS
+*&---------------------------------------------------------------------*
+FORM organizacampos .
+  DATA:
+        wa_alv3 LIKE wa_alv,
+        lv_menge(16) TYPE p DECIMALS 3,
+        lv_netsr(16) TYPE p DECIMALS 2,
+        lv_pentr(16) TYPE p DECIMALS 2.
+
+  SORT it_alv BY  ebeln2 budat.
+
+  CLEAR :
+  lv_menge,
+  lv_netsr,
+  lv_pentr.
+
+  LOOP AT it_alv INTO wa_alv.
+    wa_alv3 = wa_alv.
+    lv_menge = lv_menge + wa_alv-menge.
+    lv_netsr = lv_netsr + wa_alv-netsr.
+    lv_pentr = lv_pentr + wa_alv-pentr.
+
+    AT END OF ebeln2.
+
+      wa_alv3-menge = lv_menge.
+      wa_alv3-netsr = lv_netsr.
+      wa_alv3-pentr = lv_pentr.
+      APPEND wa_alv3 TO it_alv2.
+
+      CLEAR :
+      lv_menge,
+      lv_netsr,
+      lv_pentr.
+
+
+
+    ENDAT.
+
+  ENDLOOP.
+ENDFORM.                    " ORGANIZACAMPOS
+
+*&---------------------------------------------------------------------*
+*&      Form  IMPR
+*&---------------------------------------------------------------------*
+*       text
+*----------------------------------------------------------------------*
+*      -->P_LT_ROWS  text
+*----------------------------------------------------------------------*
+FORM impr  TABLES   p_lt_rows STRUCTURE lvc_s_row.
+  DATA: ls_selected_line LIKE lvc_s_row,
+       lf_row_index TYPE lvc_index.
+
+  zoption-tddelete  = 'X'.           "Delete after printing
+  zoption-tdnewid = 'X'.
+
+
+  aviso_iva = text-053. "DEVK976238.BSCABOVELA
+*  aviso_iva = 'El importe no incluye iva'. "DEVK976238.BSCABOVELA
+
+  LOOP AT p_lt_rows INTO ls_selected_line.
+    lf_row_index = ls_selected_line-index.
+
+    READ TABLE it_alv INDEX lf_row_index INTO wa_alv.
+
+    IF wa_alv-bukrs EQ '640'.
+      CALL FUNCTION 'OPEN_FORM'
+        EXPORTING
+          device   = 'PRINTER'
+          dialog   = 'X'
+          form     = 'ZORDCOMREC1'
+          language = 'E'
+          OPTIONS  = zoption.
+      IF sy-subrc <> 0.
+* MESSAGE ID SY-MSGID TYPE SY-MSGTY NUMBER SY-MSGNO
+*         WITH SY-MSGV1 SY-MSGV2 SY-MSGV3 SY-MSGV4.
+      ENDIF.
+    ELSEIF wa_alv-bukrs EQ '650'. "<-----PRABOALAN 27/10/2010
+
+      IF wa_alv-con_iva = 'X'.
+        CLEAR aviso_iva.
+      ENDIF.
+
+      CALL FUNCTION 'OPEN_FORM'
+        EXPORTING
+          device   = 'PRINTER'
+          dialog   = 'X'
+          form     = 'ZORDCOMREC1_BP'
+          language = 'E'
+          OPTIONS  = zoption.
+      IF sy-subrc <> 0.
+* MESSAGE ID SY-MSGID TYPE SY-MSGTY NUMBER SY-MSGNO
+*         WITH SY-MSGV1 SY-MSGV2 SY-MSGV3 SY-MSGV4.
+      ENDIF.
+
+    ELSEIF wa_alv-bukrs EQ '880'.
+      CALL FUNCTION 'OPEN_FORM'
+        EXPORTING
+          device   = 'PRINTER'
+          dialog   = 'X'
+          form     = 'ZORDCOMREC1_BK'
+          language = 'E'
+          OPTIONS  = zoption.
+    ENDIF.
+
+    SELECT
+      *
+      INTO CORRESPONDING FIELDS OF TABLE it_lineas
+      FROM ekpo WHERE ebeln = wa_alv-ebeln.
+    CLEAR ekko.
+
+    MOVE-CORRESPONDING wa_alv TO ekko.
+
+    IF wa_alv-frgke EQ '0'.
+      autoriza = text-054."DEVK976238.BSCABOVELA
+*      autoriza = 'Orden de compra no autorizada en el sistema'. "DEVK976238.BSCABOVELA
+    ELSE.
+      autoriza = text-055. "DEVK976238.BSCABOVELA
+*      autoriza = 'Orden de compra autorizada en el sistema'. "DEVK976238.BSCABOVELA
+    ENDIF.
+
+    PERFORM entry_neu.
+  ENDLOOP.
+  CALL FUNCTION 'CLOSE_FORM'
+    EXCEPTIONS
+      unopened = 1
+      OTHERS   = 2.
+ENDFORM.                    " IMPR
+
+*&---------------------------------------------------------------------*
+*&      Form  ENTRY_NEU
+*&---------------------------------------------------------------------*
+FORM entry_neu .
+*------> praboalan obtener RFC
+  SELECT SINGLE
+    *
+    FROM lfa1
+    WHERE lifnr = ekko-lifnr.
+  rfc = lfa1-stcd1.
+*------> prabaolan buscar otros gastos
+  SELECT
+    a~vtext
+    a~lifnr
+    a~zapnv
+    b~name1
+    INTO CORRESPONDING FIELDS OF TABLE it_ga
+    FROM zmm07_db04 AS a
+    LEFT JOIN lfa1 AS b
+      ON a~lifnr = b~lifnr
+    WHERE ztico = 'COMPRA'
+      AND ekorg = ekko-ekorg
+      AND evrtn = ekko-ebeln.
+
+  con = 1.
+  LOOP AT it_ga INTO wa.
+    CASE con.
+      WHEN 1.
+        wa_ga = wa.
+        IF wa_ga-zapnv = 'SI'.
+          wa_ga-name1 = ''.
+        ENDIF.
+      WHEN 2.
+        wa_ga2 = wa.
+        IF wa_ga2-zapnv = 'SI'.
+          wa_ga2-name1 = ''.
+        ENDIF.
+      WHEN 3.
+        wa_ga3 = wa.
+        IF wa_ga3-zapnv = 'SI'.
+          wa_ga3-name1 = ''.
+        ENDIF.
+    ENDCASE.
+    con = con + 1.
+  ENDLOOP.
+*------> prabaolan buscar otros gastos
+
+*------> prabaolan buscar INCOTERM
+  SELECT SINGLE
+    bezei
+    INTO nom_emb
+    FROM tinct
+    WHERE spras = 'S'
+      AND inco1 = ekko-inco1.
+*------> prabaolan buscar INCOTERM
+
+*------> prabaolan buscar ZTERMS
+  SELECT SINGLE
+    vtext
+    INTO desc_zterm
+    FROM tvzbt
+    WHERE spras = 'S'
+      AND zterm = ekko-zterm.
+*------> prabaolan buscar ZTERMS
+
+*------> prabaolan mensajes de cabecera
+  CALL FUNCTION 'CONVERSION_EXIT_ALPHA_INPUT'
+    EXPORTING
+      input  = ekko-ebeln
+    IMPORTING
+      output = ty_ebeln.
+
+  name = ty_ebeln.
+  CALL FUNCTION 'READ_TEXT'
+    EXPORTING
+      id                      = 'K01'
+      language                = ekko-spras
+      name                    = name
+      object                  = 'EKKO'
+    TABLES
+      lines                   = wt_lines
+    EXCEPTIONS
+      id                      = 1
+      language                = 2
+      name                    = 3
+      not_found               = 4
+      object                  = 5
+      reference_check         = 6
+      wrong_access_to_archive = 7
+      OTHERS                  = 8.
+
+  IF sy-subrc = 0.
+    READ TABLE wt_lines INDEX 1 INTO referen.
+*      READ TABLE WT_LINES INDEX 2 INTO TDLINE2.
+  ELSE.
+    CLEAR referen.
+*      CLEAR TDLINE2.
+  ENDIF.
+*------> prabaolan mensajes de cabecera
+
+*------> praboalan obtener origen
+  SELECT SINGLE
+          transpzone
+          vtext
+        INTO (transpzone,t_vtext)
+        FROM ekko AS a
+        JOIN adrc AS c
+          ON a~mandt = c~client AND
+             a~adrnr = c~addrnumber
+        JOIN tzont AS d
+          ON c~client = d~mandt AND
+             c~transpzone = d~zone1
+        WHERE a~ebeln = ekko-ebeln
+          AND a~ekorg = ekko-ekorg
+          AND d~spras = 'S'.
+
+  CLEAR: vl_name1_1,
+           vl_name1_2,
+           vl_regio_1,
+           vl_ort01_1,
+           vl_ort01_2,
+           vl_stras_1,
+           vl_telf1_1,
+           vl_telf1_2,
+           vl_telfx_1,
+           vl_name2_1,
+           vl_name2_2,
+           vl_regio_2,
+           vl_ort02_1,
+           vl_ort02_2,
+           vl_stras_2,
+           vl_telf2_1,
+           vl_telf2_2,
+           vl_telfx_2,
+           iva,
+           grantotal,
+           v_aut3,
+           v_aut4,
+           vn_aut3,
+           vn_aut4,
+           v_linea,
+           v_linea2,
+           v_moneda,
+           v_centavos,
+           v_cant,
+           desc_bsbez1.
+
+  SELECT SINGLE * FROM ekpo WHERE ebeln = ekko-ebeln.
+  SELECT SINGLE
+    name1
+    name2
+    house_num1
+    street
+    city1
+    region
+    INTO (vl_name1_1,vl_name1_2,vl_name2_1,vl_name2_2,vl_ort01_1,vl_regio_1)
+    FROM adrc
+    WHERE addrnumber = ekpo-adrn2.
+
+  vl_ktmng1 = ekpo-ktmng.
+
+  IF ekko-bukrs EQ '640'..
+    CALL FUNCTION 'START_FORM'
+      EXPORTING
+        form = 'ZORDCOMREC1'.
+  ELSEIF ekko-bukrs EQ '650'. "<-----PRABOALAN 27/10/2010
+    CALL FUNCTION 'START_FORM'
+      EXPORTING
+        form = 'ZORDCOMREC1_BP'.
+  ELSEIF ekko-bukrs EQ '880'.
+    CALL FUNCTION 'START_FORM'
+      EXPORTING
+        form = 'ZORDCOMREC1_BK'.
+  ENDIF.
+  "<-----PRABOALAN 27/10/2010
+
+*------> praboalan obtener origen
+  CLEAR: total.
+  LOOP AT it_lineas INTO ekpo.
+    total = total + ekpo-brtwr.
+
+    CLEAR: desc_bsbez, desc_bsbez1.
+
+    CALL FUNCTION 'CONVERSION_EXIT_ALPHA_INPUT'
+      EXPORTING
+        input  = ekpo-ebelp
+      IMPORTING
+        output = material.
+    CONCATENATE ekko-ebeln material INTO name_text.
+
+    CALL FUNCTION 'READ_TEXT'
+      EXPORTING
+        client                  = sy-mandt
+        id                      = 'F01'
+        language                = 'S'
+        name                    = name_text
+        object                  = 'EKPO'
+      TABLES
+        lines                   = wt_lines
+      EXCEPTIONS
+        id                      = 1
+        language                = 2
+        name                    = 3
+        not_found               = 4
+        object                  = 5
+        reference_check         = 6
+        wrong_access_to_archive = 7
+        OTHERS                  = 8.
+    IF sy-subrc <> 0.
+* MESSAGE ID SY-MSGID TYPE SY-MSGTY NUMBER SY-MSGNO
+*         WITH SY-MSGV1 SY-MSGV2 SY-MSGV3 SY-MSGV4.
+      CLEAR desc_bsbez.
+    ELSE.
+      READ TABLE wt_lines INDEX 1 INTO desc_bsbez1.
+    ENDIF.
+    SELECT SINGLE
+        sakto
+        kostl
+        INTO (sakto, kostl)
+        FROM ekkn
+        WHERE ebeln = ekpo-ebeln
+          AND ebelp = ekpo-ebelp.
+    CONCATENATE desc_bsbez 'Cta.:' sakto 'CeCo:' kostl INTO desc_bsbez SEPARATED BY space.
+    CALL FUNCTION 'WRITE_FORM'
+      EXPORTING
+        element = 'ITEM_LINE_A'.
+  ENDLOOP.
+  komk-fkwrt = total.
+
+  IF ekko-bukrs EQ '650'.
+    IF wa_alv-con_iva = 'X'.
+      iva = komk-fkwrt * '0.16'.
+    ENDIF.
+    grantotal = komk-fkwrt + iva.
+
+    IF komk-fkwrt > 50000.
+      v_linea2 = '______________________________'.
+      v_aut3 = 'Dirección de Finanzas y Administración'.
+      vn_aut3 = 'Lic. Dalia Noriega'.
+      IF komk-fkwrt > 100000.
+        v_linea = '______________________________'.
+        v_aut4 = 'Dirección General de BPP'.
+        vn_aut4 = 'Lic. Martín Rincón'.
+      ENDIF.
+    ENDIF.
+  ENDIF.
+
+  v_cant = grantotal.
+  IF ekko-waers EQ 'MXN'.
+    v_moneda = text-056."DEVK976238.BSCABOVELA
+*    v_moneda = 'PESOS'."DEVK976238.BSCABOVELA
+    CONCATENATE v_cant+12(2) '/100 MN' INTO v_centavos.
+  ELSEIF ekko-waers EQ 'USD'.
+    v_moneda = text-057."DEVK976238.BSCABOVELA
+*    v_moneda = 'DÓLARES'."DEVK976238.BSCABOVELA
+    CONCATENATE v_cant+12(2) '/100 US' INTO v_centavos.
+  ENDIF.
+
+  CALL FUNCTION 'SPELL_AMOUNT'
+    EXPORTING
+      amount    = grantotal
+      currency  = ekko-waers
+      filler    = space
+      language  = 'S'
+    IMPORTING
+      in_words  = v_mtoletra
+    EXCEPTIONS
+      not_found = 1
+      too_large = 2
+      OTHERS    = 3.
+  IF sy-subrc <> 0.
+* MESSAGE ID SY-MSGID TYPE SY-MSGTY NUMBER SY-MSGNO
+*         WITH SY-MSGV1 SY-MSGV2 SY-MSGV3 SY-MSGV4.
+  ENDIF.
+
+
+  CALL FUNCTION 'END_FORM'.
+ENDFORM.                    " ENTRY_NEU
+
+******************************************************************
+* BSCABJALME    OSS-140502-1157   02/05/2014
+*
+*   FORM para obtener los datos pendientes por entregar.
+******************************************************************
+FORM pendiente_entregar.
+
+  LOOP AT it_alv INTO wa_alv WHERE obmng NE 0.
+
+    APPEND wa_alv TO it_alv_aux.
+
+  ENDLOOP.
+
+  CLEAR it_alv.
+
+  it_alv = it_alv_aux.
+
+ENDFORM.                    "PENDIENTE_ENTREGAR
+*&---------------------------------------------------------------------*
+*&      Form  TOMA_CONDICIONES
+*&---------------------------------------------------------------------*
+*       text
+*----------------------------------------------------------------------*
+*  -->  p1        text
+*  <--  p2        text
+*----------------------------------------------------------------------*
+FORM toma_condiciones .
+
+  DATA: BEGIN OF wa_konv,
+          knumv LIKE konv-knumv,
+          kposn LIKE konv-kposn,
+          kschl LIKE konv-kschl,
+          kappl LIKE konv-kappl,
+          kbetr LIKE konv-kbetr,
+          waers2 LIKE konv-waers,
+        END OF wa_konv,
+        it_konv LIKE STANDARD TABLE OF wa_konv.
+
+*  DATA: IT_ALV2 LIKE STANDARD TABLE OF WA_ALV.
+
+  DATA: l_vtext TYPE t685t-vtext,
+        l_counter TYPE int4.
+
+  CLEAR  : it_konv, wa_konv, g_cond_max.
+  REFRESH: it_konv.
+
+  SELECT knumv
+         kposn
+         kschl
+         kappl
+         kbetr
+         waers AS waers2
+    FROM konv
+    INTO CORRESPONDING FIELDS OF TABLE it_konv
+     FOR ALL ENTRIES IN it_alv
+   WHERE knumv EQ it_alv-knumv
+     AND kschl LIKE 'Z%'.
+
+  SORT it_konv BY knumv kposn kschl ASCENDING.
+
+  LOOP AT it_alv INTO wa_alv.
+
+    l_counter  = 0.
+
+    LOOP AT it_konv INTO wa_konv WHERE knumv = wa_alv-knumv
+                                   AND kposn = wa_alv-ebelp.
+      CLEAR l_vtext.
+
+      l_counter  = l_counter + 1.
+
+      SELECT SINGLE vtext
+        FROM t685t
+        INTO l_vtext
+       WHERE spras = sy-langu
+         AND kappl = wa_konv-kappl
+         AND kschl = wa_konv-kschl.
+
+      CASE l_counter.
+        WHEN 1.
+          wa_alv-kschlc1  = wa_konv-kschl.
+          wa_alv-kbetrc1  = wa_konv-kbetr.
+          wa_alv-waersc1  = wa_konv-waers2.
+          wa_alv-vtextc1  = l_vtext.
+
+          IF g_cond_max < 1.
+            g_cond_max = 1.
+          ENDIF.
+        WHEN 2.
+          wa_alv-kschlc2  = wa_konv-kschl.
+          wa_alv-kbetrc2  = wa_konv-kbetr.
+          wa_alv-waersc2  = wa_konv-waers2.
+          wa_alv-vtextc2  = l_vtext.
+
+          IF g_cond_max < 2.
+            g_cond_max = 2.
+          ENDIF.
+        WHEN 3.
+          wa_alv-kschlc3  = wa_konv-kschl.
+          wa_alv-kbetrc3  = wa_konv-kbetr.
+          wa_alv-waersc3  = wa_konv-waers2.
+          wa_alv-vtextc3  = l_vtext.
+
+          IF g_cond_max < 3.
+            g_cond_max = 3.
+          ENDIF.
+        WHEN 4.
+          wa_alv-kschlc4  = wa_konv-kschl.
+          wa_alv-kbetrc4  = wa_konv-kbetr.
+          wa_alv-waersc4  = wa_konv-waers2.
+          wa_alv-vtextc4  = l_vtext.
+
+          IF g_cond_max < 4.
+            g_cond_max = 4.
+          ENDIF.
+      ENDCASE.
+
+    ENDLOOP.
+
+    MODIFY it_alv FROM wa_alv TRANSPORTING kschlc1 kbetrc1 waersc1 vtextc1
+                                           kschlc2 kbetrc2 waersc2 vtextc2
+                                           kschlc3 kbetrc3 waersc3 vtextc3
+                                           kschlc4 kbetrc4 waersc4 vtextc4.
+
+
+  ENDLOOP.
+
+ENDFORM.                    " TOMA_CONDICIONES
+*&---------------------------------------------------------------------*
+*&      Form  TOMA_OBMNG
+*&---------------------------------------------------------------------*
+*       text
+*----------------------------------------------------------------------*
+*  -->  p1        text
+*  <--  p2        text
+*----------------------------------------------------------------------*
+FORM toma_mas_datos.
+
+
+  DATA: l_zbd1t TYPE char3.
+
+  DATA: lt_ausg LIKE  cdred_mmpur OCCURS 0 WITH HEADER LINE.
+
+  DATA: v_cant_lib    TYPE i VALUE 0,"bscabjdelg 29/11/2012 BSCABJDELG
+        v_cod_lib(2)  TYPE c. "bscabjdelg 29/11/2012 BSCABJDELG
+
+  PERFORM fill_gt_usr  TABLES gt_usr.
+
+  PERFORM fill_gt_eket TABLES gt_eket.
+
+  PERFORM fill_gt_nast TABLES gt_nast.
+
+  PERFORM fill_autorizacion. "BSCABJDELG DEVK951382 26/11/2012
+
+  LOOP AT it_alv INTO wa_alv.
+
+    CLEAR: l_zbd1t.
+*XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+    " INICIA >>> Calcula la Cantidad por Entregar
+*    IF wa_alv-elikz <> 'X'. "Indicador de entrega final
+
+    READ TABLE gt_eket  INTO gwa_eket
+                        WITH KEY  ebeln = wa_alv-ebeln
+                                  ebelp = wa_alv-ebelp
+                        TRANSPORTING ALL FIELDS.
+
+
+
+
+    IF sy-subrc = 0.
+      IF  wa_alv-elikz = 'X'.
+        wa_alv-obmng = 0.
+      ELSE.
+        wa_alv-obmng = gwa_eket-menge - gwa_eket-wemng.
+      ENDIF.
+*      wa_alv-pentr = wa_alv-menge - wa_alv-obmng.   " BSCABJALME    OSS-140502-1157   05/05/2014
+*-->> OSS-150120-1114
+      wa_alv-pentr = gwa_eket-wemng.
+    ENDIF.
+
+*    ELSE. "WA_ALV-ELIKZ = 'X'  Se ha realizado entrega final
+*      wa_alv-obmng = 0.
+*      wa_alv-pentr = wa_alv-menge - wa_alv-obmng.    " BSCABJALME    OSS-140502-1157   05/05/2014
+*    ENDIF.
+*XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+
+
+    " -----------------------------------------------
+    " -----------------------------------------------
+
+    " INICIA >>> ZTER2 TEXTO.  Armar Las condiciones de Pago
+    l_zbd1t = wa_alv-zbd1t.
+
+    CONCATENATE wa_alv-zterm l_zbd1t text-058 INTO wa_alv-zter2 SEPARATED BY space."DEVK976238.BSCABOVELA
+*    CONCATENATE wa_alv-zterm l_zbd1t 'Días' INTO wa_alv-zter2 SEPARATED BY space."DEVK976238.BSCABOVELA
+    " ------------------------------------------------------
+    " ------------------------------------------------------
+
+
+
+    " INICIA >>> Lee el campo "Asignado A". (Usuario que Creo el Pedido)
+    READ TABLE gt_usr INTO gwa_usr
+                      WITH KEY bname = wa_alv-ernam TRANSPORTING ALL FIELDS.
+
+    IF sy-subrc = 0.
+      CONCATENATE gwa_usr-name_first gwa_usr-name_last INTO wa_alv-ernamt SEPARATED BY space.
+    ENDIF.
+    " -------------------------------------------------------------------
+    " -------------------------------------------------------------------
+
+
+    " INICIA >>> Lee la fecha de envio de OC al Proveedor (del mensaje de impresion)
+    READ TABLE gt_nast INTO gwa_nast
+                        WITH KEY objky = wa_alv-ebeln
+                        TRANSPORTING ALL FIELDS.
+
+    IF sy-subrc = 0.
+      wa_alv-datvr = gwa_nast-datvr.
+    ENDIF.
+    " ----------------------------------------------------------------------------
+    " ----------------------------------------------------------------------------
+
+
+    " INICIA >>> Lee Fecha de Ultima liberación
+    "DEVK974548 BSCABOVELA OSS-140911-1141 - Toma de valores estauts de liberación "A"
+*    IF WA_ALV-FRGKE = '5'. "Si el documento esta liberado
+    IF wa_alv-frgke = '5' OR wa_alv-frgke = 'A'. "Si el documento esta liberado
+      CALL FUNCTION 'ME_CHANGEDOC_READ2'
+        EXPORTING
+          i_document_category   = 'F'
+          i_document_number     = wa_alv-ebeln
+*             i_document_item =           " ekpo-ebelp
+*             i_all_items =               " xfeld
+*             i_archive_handle =          " sy-tabix
+       TABLES
+         t_ausg                 = lt_ausg
+          .  "  ME_CHANGEDOC_READ2
+
+      SORT lt_ausg BY objectclas objectid fname udate DESCENDING utime DESCENDING.
+
+      READ TABLE lt_ausg WITH KEY objectclas  = 'EINKBELEG'
+                                  objectid    = wa_alv-ebeln
+                                  fname       = 'FRGKE'
+*                                      F_NEW       = '5'
+                                  TRANSPORTING ALL FIELDS.
+      "DEVK974548 BSCABOVELA OSS-140911-1141 - Toma de valores estauts de liberación "A"
+*      IF SY-SUBRC = 0  AND  LT_AUSG-F_NEW = '5'.
+      IF sy-subrc = 0  AND  ( lt_ausg-f_new = '5' OR lt_ausg-f_new = 'A' ).
+        wa_alv-udate = lt_ausg-udate.
+      ENDIF.
+    ENDIF.
+    " -------------------------------------------
+    " -------------------------------------------
+
+    "Inicio BSCABJDELG DEVK951382 26/11/2012
+
+
+    SELECT SINGLE * FROM t16fs "BSCABLFRAN Validacion de liberaciones y pendientes por liberar.
+      INTO wa_t16fs
+      WHERE frgsx EQ wa_alv-frgsx
+      AND frggr EQ wa_alv-frggr.
+
+    IF wa_alv-frgke EQ '0'. "Indicador de liberacion, si es 0 entonces no esta liberado, y se procede a validar. bscablfran
+      v_cant_lib = 0.
+      v_cant_lib = STRLEN( wa_alv-frgzu ).
+*           IF WA_ALV-FRGGR = 'VR' .
+      CASE v_cant_lib.
+        WHEN 0.
+          v_cod_lib = wa_t16fs-frgc1.
+        WHEN 1.
+          v_cod_lib = wa_t16fs-frgc2.
+        WHEN 2.
+          v_cod_lib = wa_t16fs-frgc3.
+        WHEN 3.
+          v_cod_lib = wa_t16fs-frgc4.
+        WHEN 4.
+          v_cod_lib = wa_t16fs-frgc5.
+        WHEN 5.
+          v_cod_lib = wa_t16fs-frgc6.
+        WHEN 6.
+          v_cod_lib = wa_t16fs-frgc7.
+        WHEN 7.
+          v_cod_lib = wa_t16fs-frgc8.
+      ENDCASE. "BSCABLFRAN AQUI TERMINA 22-NOV-2013
+*          WHEN 8.
+*            v_cod_lib = '08'.
+*                WHEN 0.
+*            v_cod_lib = '00'.
+*           WHEN 1.
+*            v_cod_lib = '01'.
+*          WHEN 2.
+*            v_cod_lib = '02'.
+*           WHEN 3.
+*            v_cod_lib = '03'.
+*          WHEN 4.
+*            v_cod_lib = '04'.
+*           WHEN 5.
+*            v_cod_lib = '05'.
+*          WHEN 6.
+*            v_cod_lib = '06'.
+*           WHEN 7.
+*            v_cod_lib = '07'.
+*          WHEN 8.
+*            v_cod_lib = '08'.
+*         ENDCASE.
+*         ELSE.
+*            CASE v_cant_lib.
+*           WHEN 0.
+*            v_cod_lib = '00'.
+*           WHEN 1.
+*            v_cod_lib = '01'.
+*          WHEN 2.
+*            v_cod_lib = '02'.
+*           WHEN 3.
+*            v_cod_lib = '03'.
+*          WHEN 4.
+*            v_cod_lib = '04'.
+*           WHEN 5.
+*            v_cod_lib = '05'.
+*          WHEN 6.
+*            v_cod_lib = '06'.
+*           WHEN 7.
+*            v_cod_lib = '07'.
+*          WHEN 8.
+*            v_cod_lib = '08'.
+*         ENDCASE.
+*           ENDIF.
+
+
+
+      READ TABLE it_t16 INTO wa_t16
+        WITH KEY frggr = wa_alv-frggr
+                 frgco = v_cod_lib.
+      IF sy-subrc = 0.
+        wa_alv-frgct = wa_t16-frgct.
+      ENDIF.
+    ELSEIF wa_alv-frgke EQ '5' OR
+           wa_alv-frgke EQ '6' OR
+"DEVK974548 BSCABOVELA OSS-140911-1141 - Toma de valores estauts de liberación "A"
+           wa_alv-frgke EQ 'A' .
+      wa_alv-frgct = text-059."DEVK976238.BSCABOVELA
+*      wa_alv-frgct = 'Liberación Total'."DEVK976238.BSCABOVELA
+    ELSEIF wa_alv-frgke IS INITIAL.
+      wa_alv-frgct = text-060."DEVK976238.BSCABOVELA
+*      wa_alv-frgct = 'Sin estrategía'."DEVK976238.BSCABOVELA
+    ENDIF.
+
+***14/04/2016  *** BSCAMBRET
+IF WA_ALV-ERNAMT IS INITIAL.
+WA_ALV-ERNAMT  = WA_ALV-ERNAM.
+  ENDIF.
+
+***END 14/04/2016
+
+    "Anexar FRGCT a la modificacion en la tabla interna
+    MODIFY it_alv FROM wa_alv TRANSPORTING obmng zter2 ernamt datvr udate frgct pentr.
+
+    "Fin BSCABJDELG DEVK951382 26/11/2012
+
+  ENDLOOP.
+ENDFORM.                    " TOMA_OBMNG
+*&---------------------------------------------------------------------*
+*&      Form  TOMA_TEXTOS
+*&---------------------------------------------------------------------*
+*       text
+*----------------------------------------------------------------------*
+*  -->  p1        text
+*  <--  p2        text
+*----------------------------------------------------------------------*
+FORM toma_textos .
+
+  DATA: l_head    LIKE thead,
+        it_lines   LIKE STANDARD TABLE OF tline WITH HEADER LINE,
+        l_waline  LIKE tline,
+        l_name    LIKE thead-tdname.
+  DATA: lw_lines  TYPE tline. "DEVK985562.BSCABOVELA
+
+  LOOP AT it_alv INTO wa_alv.
+
+    CLEAR:   it_lines, l_name.
+    REFRESH: it_lines.
+
+    CONCATENATE wa_alv-ebeln wa_alv-ebelp INTO l_name.
+*    l_name = WA_ALV-EBELN.
+
+    CALL FUNCTION 'READ_TEXT' "Busca Texto en Idioma Español
+      EXPORTING
+        client        = sy-mandt
+        id            = 'F01'
+        language      = 'S'
+        name          = l_name
+        object        = 'EKPO'
+      IMPORTING
+        header        = l_head
+      TABLES
+        lines         = it_lines
+      EXCEPTIONS
+        id            = 1
+        language      = 2
+        name          = 3
+        not_found     = 4
+        object        = 5
+        reference_check = 6
+        wrong_access_to_archive = 7
+        .  "  READ_TEXT
+
+    IF sy-subrc = 4.
+      CALL FUNCTION 'READ_TEXT' "Busca Texto en Idioma Español
+        EXPORTING
+          client        = sy-mandt
+          id            = 'F01'
+          language      = 'E'
+          name          = l_name
+          object        = 'EKPO'
+        IMPORTING
+          header        = l_head
+        TABLES
+          lines         = it_lines
+        EXCEPTIONS
+          id            = 1
+          language      = 2
+          name          = 3
+          not_found     = 4
+          object        = 5
+          reference_check = 6
+          wrong_access_to_archive = 7
+          .  "  READ_TEXT
+    ENDIF.
+
+    IF NOT it_lines[] IS INITIAL.
+
+      READ TABLE it_lines INDEX 1.
+
+      wa_alv-textp = it_lines-tdline.
+
+      MODIFY it_alv FROM wa_alv TRANSPORTING textp.
+    ENDIF.
+*-----------------------DEVK985562.BSCABOVELA--------------------------*
+    REFRESH it_lines.
+    MOVE wa_alv-ebeln TO l_name.
+    CALL FUNCTION 'READ_TEXT'
+      EXPORTING
+        id                      = 'F01'
+        language                = 'S'
+        name                    = l_name
+        object                  = 'EKKO'
+      TABLES
+        lines                   = it_lines
+      EXCEPTIONS
+        id                      = 1
+        language                = 2
+        name                    = 3
+        not_found               = 4
+        object                  = 5
+        reference_check         = 6
+        wrong_access_to_archive = 7
+        OTHERS                  = 8.
+    IF sy-subrc <> 0.
+      CALL FUNCTION 'READ_TEXT'
+        EXPORTING
+          id                      = 'F01'
+          language                = 'E'
+          name                    = l_name
+          object                  = 'EKKO'
+        TABLES
+          lines                   = it_lines
+        EXCEPTIONS
+          id                      = 1
+          language                = 2
+          name                    = 3
+          not_found               = 4
+          object                  = 5
+          reference_check         = 6
+          wrong_access_to_archive = 7
+          OTHERS                  = 8.
+    ENDIF.
+    IF NOT it_lines[] IS INITIAL.
+      READ TABLE it_lines INTO lw_lines INDEX 1.
+      wa_alv-hdrtx = lw_lines-tdline.
+      MODIFY it_alv FROM wa_alv TRANSPORTING hdrtx.
+    ENDIF.
+*-----------------------DEVK985562.BSCABOVELA--------------------------*
+  ENDLOOP.
+
+ENDFORM.                    " TOMA_TEXTOS
+*&---------------------------------------------------------------------*
+*&      Form  SHOW_POSN_TEXT
+*&---------------------------------------------------------------------*
+*       text
+*----------------------------------------------------------------------*
+*      -->P_WA_ALV_EBELN  text
+*      -->P_WA_ALV_EBELP  text
+*----------------------------------------------------------------------*
+FORM show_posn_text  USING    p_ebeln
+                              p_ebelp.
+
+  DATA: l_head    LIKE thead,
+        it_lines   LIKE STANDARD TABLE OF tline WITH HEADER LINE,
+        l_waline  LIKE tline,
+        l_name    LIKE thead-tdname.
+
+  CLEAR:   it_lines, l_name.
+  REFRESH: it_lines.
+
+  CONCATENATE p_ebeln p_ebelp INTO l_name.
+*    l_name = P_EBELP.
+
+  CALL FUNCTION 'READ_TEXT' "Busca Texto en Idioma Español
+    EXPORTING
+      client        = sy-mandt
+      id            = 'F01'
+      language      = 'S'
+      name          = l_name
+      object        = 'EKPO'
+    IMPORTING
+      header        = l_head
+    TABLES
+      lines         = it_lines
+    EXCEPTIONS
+      id            = 1
+      language      = 2
+      name          = 3
+      not_found     = 4
+      object        = 5
+      reference_check = 6
+      wrong_access_to_archive = 7
+      .  "  READ_TEXT
+
+  IF sy-subrc = 4.
+    CALL FUNCTION 'READ_TEXT' "Busca Texto en Idioma Español
+      EXPORTING
+        client        = sy-mandt
+        id            = 'F01'
+        language      = 'E'
+        name          = l_name
+        object        = 'EKPO'
+      IMPORTING
+        header        = l_head
+      TABLES
+        lines         = it_lines
+      EXCEPTIONS
+        id            = 1
+        language      = 2
+        name          = 3
+        not_found     = 4
+        object        = 5
+        reference_check = 6
+        wrong_access_to_archive = 7
+        .  "  READ_TEXT
+  ENDIF.
+
+*    IF NOT it_lines[] IS INITIAL.
+
+  DATA it_fieldcat TYPE  slis_t_fieldcat_alv WITH HEADER LINE.
+  DATA sh_fcat TYPE slis_fieldcat_alv.
+
+  DATA: gs_private  TYPE slis_data_caller_exit,
+        gs_selfield TYPE slis_selfield,
+        g_exit(1)   TYPE c.
+
+  CLEAR: it_fieldcat, sh_fcat.
+
+  sh_fcat-key       = space.
+  sh_fcat-fieldname = 'TDLINE'.
+  sh_fcat-emphasize = 'C710'.
+  sh_fcat-outputlen = 65.
+  APPEND sh_fcat TO it_fieldcat.
+
+  CALL FUNCTION 'REUSE_ALV_POPUP_TO_SELECT'
+    EXPORTING
+      i_title              = text-061 "DEVK976238.BSCABOVELA
+*      i_title              = 'Texto de Posición'"DEVK976238.BSCABOVELA
+      i_selection          = ''
+*          i_selection          = SPACE
+      i_zebra              = ''
+      i_tabname            = 'it_lines'
+*          i_checkbox_fieldname = 'SELECT'
+      it_fieldcat          = it_fieldcat[]
+      is_private           = gs_private
+    IMPORTING
+      es_selfield          = gs_selfield
+      e_exit               = g_exit
+    TABLES
+      t_outtab             = it_lines
+    EXCEPTIONS
+      program_error        = 1
+      OTHERS               = 2.
+
+  IF sy-subrc NE 0.
+    MESSAGE i000(ok) WITH sy-subrc.
+  ENDIF.
+
+*    ELSE.
+*      MESSAGE I000(OK) WITH 'No se encontrarón Textos'.
+*    ENDIF.
+
+ENDFORM.                    " SHOW_POSN_TEXT
+*&---------------------------------------------------------------------*
+*&      Form  DELETE_MENORA_5000
+*&---------------------------------------------------------------------*
+*       text
+*----------------------------------------------------------------------*
+*  -->  p1        text
+*  <--  p2        text
+*----------------------------------------------------------------------*
+FORM delete_menora_5000 .
+
+  DATA: l_inn_amount    TYPE bantrag,
+        l_alt_amount    TYPE bantrag,
+        l_inn_curr      TYPE swhr   ,
+        l_bedat         LIKE ekko-bedat,
+        l_ebeln_netwr   LIKE ekpo-netwr.
+
+  LOOP AT it_alv INTO wa_alv.
+
+    CLEAR:  l_inn_amount,
+            l_alt_amount,
+            l_inn_curr,
+            l_bedat,
+            l_ebeln_netwr.
+
+    SELECT SINGLE SUM( netwr )
+      INTO l_ebeln_netwr
+      FROM ekpo
+     WHERE ebeln =  wa_alv-ebeln
+       AND loekz <> 'L'.
+
+    l_inn_amount = l_ebeln_netwr.
+    l_inn_curr   = wa_alv-waersn.
+    l_bedat      = wa_alv-bedat.
+
+
+    IF l_inn_curr <> 'USD'.
+
+      CALL FUNCTION 'EMUL_CONVERT_AMOUNT_FOR_SCRIPT'
+        EXPORTING
+          in_amount    = l_inn_amount
+          in_currency  = l_inn_curr
+          alt_currency = 'USD'
+          date         = l_bedat
+        IMPORTING
+          alt_amount   = l_alt_amount
+        EXCEPTIONS
+          error        = 1.
+
+      wa_alv-netwrusd = l_alt_amount.
+
+    ELSE.
+      wa_alv-netwrusd = l_inn_amount.
+    ENDIF.
+
+    MODIFY it_alv FROM wa_alv TRANSPORTING netwrusd.
+  ENDLOOP.
+
+  "Se eliminar regs. donde el importe es menor a 5000 Dlls
+  DELETE it_alv WHERE netwrusd < 5000. "P_M5000. "5000. "BSCABLFRAN 16-OCT-2013
+
+ENDFORM.                    " SOLO_MAYOR_5000
+*&---------------------------------------------------------------------*
+*&      Form  FILL_LT_USR
+*&---------------------------------------------------------------------*
+*       text
+*----------------------------------------------------------------------*
+*      -->P_LT_USR  text
+*----------------------------------------------------------------------*
+FORM fill_gt_usr  TABLES gt_usr STRUCTURE gwa_usr.
+  IF it_alv IS NOT INITIAL. "BSCABJDELG 27/11/2012 DEVK951402
+    REFRESH: gt_usr.
+
+    SELECT a~bname b~name_first  b~name_last
+      INTO CORRESPONDING FIELDS OF TABLE gt_usr
+      FROM usr21 AS a
+      JOIN adrp  AS b ON ( b~client = a~mandt AND b~persnumber = a~persnumber )
+      FOR ALL ENTRIES IN it_alv
+     WHERE bname = it_alv-ernam.
+
+    SORT gt_usr BY bname name_first name_last.
+  ENDIF.  "BSCABJDELG 27/11/2012 DEVK951402
+ENDFORM.                    " FILL_LT_USR
+*&---------------------------------------------------------------------*
+*&      Form  FILL_GT_EKET
+*&---------------------------------------------------------------------*
+*       text
+*----------------------------------------------------------------------*
+*      -->P_GT_EKET  text
+*----------------------------------------------------------------------*
+FORM fill_gt_eket  TABLES   gt_eket STRUCTURE gwa_eket.
+
+  IF it_alv IS NOT INITIAL. "BSCABJDELG 27/11/2012 DEVK951402
+
+    REFRESH: gt_eket.
+
+    SELECT  ebeln
+            ebelp
+            etenr
+            menge
+            wemng
+      FROM eket
+      INTO CORRESPONDING FIELDS OF TABLE gt_eket
+      FOR ALL ENTRIES IN it_alv
+     WHERE ebeln = it_alv-ebeln
+       AND ebelp = it_alv-ebelp.
+
+    SORT gt_eket BY ebeln ebelp etenr DESCENDING menge wemng.
+
+  ENDIF.  "BSCABJDELG 27/11/2012 DEVK951402
+ENDFORM.                    " FILL_GT_EKET
+*&---------------------------------------------------------------------*
+*&      Form  FILL_GT_NAST
+*&---------------------------------------------------------------------*
+*       text
+*----------------------------------------------------------------------*
+*      -->P_GT_NAST  text
+*----------------------------------------------------------------------*
+FORM fill_gt_nast  TABLES   gt_nast STRUCTURE gwa_nast.
+
+  DATA: BEGIN OF lwa_ebeln,
+          objky LIKE nast-objky,
+        END OF lwa_ebeln,
+        lt_ebeln LIKE STANDARD TABLE OF lwa_ebeln.
+
+  REFRESH: gt_nast, lt_ebeln.
+
+  LOOP AT it_alv INTO wa_alv.
+    lwa_ebeln-objky = wa_alv-ebeln.
+
+    APPEND lwa_ebeln TO lt_ebeln.
+  ENDLOOP.
+
+  DELETE ADJACENT DUPLICATES FROM lt_ebeln.
+
+  IF lt_ebeln IS NOT INITIAL. "BSCABJDELG 27/11/2012 DEVK951402
+    SELECT kappl kschl objky vstat datvr
+      INTO CORRESPONDING FIELDS OF TABLE gt_nast
+      FROM nast
+      FOR ALL ENTRIES IN lt_ebeln
+      WHERE kappl = 'EF'
+*        AND kschl = 'BPK1'
+        AND objky = lt_ebeln-objky
+        AND vstat = '1'.
+
+    SORT gt_nast BY kappl kschl objky vstat datvr DESCENDING.
+  ENDIF.  "BSCABJDELG 27/11/2012  DEVK951402
+ENDFORM.                    " FILL_GT_NAST
+*&---------------------------------------------------------------------*
+*&      Form  FILL_AUTORIZACION
+*&---------------------------------------------------------------------*
+*       text
+*----------------------------------------------------------------------*
+*  -->  p1        text
+*  <--  p2        text
+*----------------------------------------------------------------------*
+FORM fill_autorizacion .
+  IF it_alv IS NOT INITIAL.
+************Extraer las denominaciones de códigos de liberación******
+    SELECT frggr
+           frgco
+           frgct
+      FROM t16fd
+     INTO TABLE it_t16
+      FOR ALL ENTRIES IN it_alv
+      WHERE frggr = it_alv-frggr AND
+          "  frgco = it_alv-frgsx and
+            spras = sy-langu.
+    IF sy-subrc = 0.
+
+    ENDIF.
+  ENDIF.
+
+ENDFORM.                    " FILL_AUTORIZACION
+*&---------------------------------------------------------------------*
+*&      Form  DESCARGAR_A_EXCEL
+*&---------------------------------------------------------------------*
+*       text
+*----------------------------------------------------------------------*
+*  -->  p1        text
+*  <--  p2        text
+*----------------------------------------------------------------------*
+FORM descargar_a_excel .
+
+  TYPES: BEGIN OF ty_fieldnames,
+          nombre TYPE c LENGTH 50,  "Nombes de columnas para descarga
+         END OF ty_fieldnames.
+
+
+*<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<___EJEMPLO__>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+
+  TYPES: ty_line TYPE string.
+
+  DATA:
+        it_tab2 TYPE TABLE OF ty_line,
+        linea TYPE string. " Contains records for second sheet
+*<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<___EJEMPLO__>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+
+
+  DATA:
+        ti_fieldnames    TYPE STANDARD TABLE OF ty_fieldnames,
+        lt_fcat          TYPE lvc_t_fcat,
+        ls_fcat          LIKE LINE OF lt_fcat,
+        lo_tabla         TYPE REF TO data,
+        lo_linea         TYPE REF TO data,
+        lo_lincol        TYPE REF TO data,
+        wa_fieldnames    TYPE ty_fieldnames,
+        aux_fieldcatalog TYPE lvc_t_fcat,
+        eslayout           TYPE lvc_s_layo,
+        lv_fname         TYPE lvc_fname,
+        ld_filename      TYPE string,
+        ld_path          TYPE string,
+        ld_fullpath      TYPE string,
+        vl_contador      TYPE i,
+        lv_filas(8)      TYPE n.
+
+  DATA: contador TYPE i,
+        vg_name  TYPE c LENGTH 30.
+
+  FIELD-SYMBOLS:  <tabla>  TYPE STANDARD TABLE,
+                  <color>  TYPE ANY TABLE,
+                  <linea>  TYPE ANY,
+                  <lincol> TYPE lvc_s_styl,
+                  <fs_alv> LIKE wa_alv.
+
+
+*--> ventana de dialogo para capturar la ruta donde se descargara el archivo
+  CALL METHOD cl_gui_frontend_services=>file_save_dialog
+    EXPORTING
+      window_title         = 'Guardar Archivo'
+      default_extension    = '*.xls;*.xlsx;*.xlsm'
+      default_file_name    = 'Reporte.xls'
+      with_encoding        = ''
+      file_filter          = 'Excel(*.xls)|*.xls|*.xlsx|*.xlsm'
+      initial_directory    = 'c:\' " 'C:\Users\bscrsalina\Desktop\TMP CANDY\'
+      prompt_on_overwrite  = 'X'
+    CHANGING
+      filename             = ld_filename
+      path                 = ld_path
+      fullpath             = ld_fullpath
+    EXCEPTIONS
+      cntl_error           = 1
+      error_no_gui         = 2
+      not_supported_by_gui = 3
+      OTHERS               = 4.
+
+  p_ruta  = ld_fullpath.
+
+
+*-->Se recupera el layout de pantalla del reporte
+  CALL METHOD r_alv_grid->get_backend_fieldcatalog
+    IMPORTING
+      et_fieldcatalog = aux_fieldcatalog
+    EXCEPTIONS
+      OTHERS          = 4.
+  CLEAR ls_fcat.
+  IF sy-subrc = 0.
+    DELETE aux_fieldcatalog WHERE no_out EQ 'X'.
+  ENDIF.
+
+SORT aux_fieldcatalog BY col_pos.
+
+*-->Filtramos solo los campos visibles en la panatalla
+  LOOP AT aux_fieldcatalog INTO ls_fcat.
+
+*<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<___EJEMPLO__>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+    CONCATENATE  ls_fcat-scrtext_m  linea INTO linea  SEPARATED BY '#'.
+*<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<___EJEMPLO__>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+
+
+    vg_name            = ls_fcat-scrtext_m.
+    ls_fcat-cfieldname = vg_name.
+    ls_fcat-outputlen  = ls_fcat-outputlen.
+    ls_fcat-fieldname  = ls_fcat-fieldname.
+
+    wa_fieldnames-nombre = vg_name.
+
+    APPEND ls_fcat TO lt_fcat.
+    APPEND  wa_fieldnames TO ti_fieldnames.
+
+    CLEAR:  vg_name,
+            ls_fcat,
+            wa_fieldnames.
+
+  ENDLOOP.
+
+  APPEND linea TO it_tab2.
+
+
+*-->Se crea la tabla dinamica en base a las columnas obtenidas lt_fcat
+  CALL METHOD cl_alv_table_create=>create_dynamic_table
+    EXPORTING
+      i_style_table   = 'X'
+      it_fieldcatalog = lt_fcat
+    IMPORTING
+      ep_table        = lo_tabla
+      e_style_fname   = lv_fname.
+
+  ASSIGN lo_tabla->* TO <tabla>.
+
+  CREATE DATA lo_linea LIKE LINE OF <tabla>.
+
+  ASSIGN lo_linea->* TO <linea>.
+
+
+
+***  ****ADICION expoertacion carga por partida y por grupo   27/04/2015 bscabmbret
+
+
+  IF p_par EQ 'X'.
+    DESCRIBE TABLE it_alv2[] LINES lv_filas.
+
+    CLEAR vl_contador.
+
+*-->Se agrega los datos para cada campo de la tabla dinamica
+    DO lv_filas TIMES.
+
+      vl_contador = vl_contador + 1.
+
+      READ TABLE it_alv2[] ASSIGNING <fs_alv> INDEX vl_contador.
+
+      MOVE-CORRESPONDING <fs_alv> TO <linea>.
+
+      APPEND <linea> TO <tabla>.
+
+      CLEAR: <linea>.
+    ENDDO.
+
+*-->Se descarga la tabla Interna (dinamica) en formato Excel
+    CALL FUNCTION 'GUI_DOWNLOAD'
+      EXPORTING
+        filename                = p_ruta
+        filetype                = 'DBF'
+        write_field_separator   = 'X'
+        write_bom               = 'X'
+      TABLES
+        data_tab                = <tabla>
+        fieldnames              = ti_fieldnames
+      EXCEPTIONS
+        file_write_error        = 1
+        no_batch                = 2
+        gui_refuse_filetransfer = 3
+        invalid_type            = 4
+        no_authority            = 5
+        unknown_error           = 6
+        header_not_allowed      = 7
+        separator_not_allowed   = 8
+        filesize_not_allowed    = 9
+        header_too_long         = 10
+        dp_error_create         = 11
+        dp_error_send           = 12
+        dp_error_write          = 13
+        unknown_dp_error        = 14
+        access_denied           = 15
+        dp_out_of_memory        = 16
+        disk_full               = 17
+        dp_timeout              = 18
+        file_not_found          = 19
+        dataprovider_exception  = 20
+        control_flush_error     = 21.
+    IF sy-subrc = 0.
+      MESSAGE s000(ih) WITH 'Descarga exitosa'.
+    ELSE.
+      MESSAGE s000(ih) WITH 'Error en la Descarga.'.
+    ENDIF.
+
+
+  ELSE.
+
+    DESCRIBE TABLE it_alv[] LINES lv_filas.
+
+    CLEAR vl_contador.
+
+*-->Se agrega los datos para cada campo de la tabla dinamica
+    DO lv_filas TIMES.
+
+      vl_contador = vl_contador + 1.
+
+      READ TABLE it_alv[] ASSIGNING <fs_alv> INDEX vl_contador.
+
+      MOVE-CORRESPONDING <fs_alv> TO <linea>.
+
+      APPEND <linea> TO <tabla>.
+
+      CLEAR: <linea>.
+    ENDDO.
+
+*-->Se descarga la tabla Interna (dinamica) en formato Excel
+    CALL FUNCTION 'GUI_DOWNLOAD'
+      EXPORTING
+        filename                = p_ruta
+        filetype                = 'DBF'
+        write_field_separator   = 'X'
+        write_bom               = 'X'
+      TABLES
+        data_tab                = <tabla>
+        fieldnames              = ti_fieldnames
+      EXCEPTIONS
+        file_write_error        = 1
+        no_batch                = 2
+        gui_refuse_filetransfer = 3
+        invalid_type            = 4
+        no_authority            = 5
+        unknown_error           = 6
+        header_not_allowed      = 7
+        separator_not_allowed   = 8
+        filesize_not_allowed    = 9
+        header_too_long         = 10
+        dp_error_create         = 11
+        dp_error_send           = 12
+        dp_error_write          = 13
+        unknown_dp_error        = 14
+        access_denied           = 15
+        dp_out_of_memory        = 16
+        disk_full               = 17
+        dp_timeout              = 18
+        file_not_found          = 19
+        dataprovider_exception  = 20
+        control_flush_error     = 21.
+    IF sy-subrc = 0.
+      MESSAGE s000(ih) WITH 'Descarga exitosa'.
+    ELSE.
+      MESSAGE s000(ih) WITH 'Error en la Descarga.'.
+    ENDIF.
+
+
+  ENDIF.
+
+
+
+
+ENDFORM.                    " DESCARGAR_A_EXCEL
+*&---------------------------------------------------------------------*
+*&      Form  VALIDAR_AUTORIZACIONES
+*&---------------------------------------------------------------------*
+*       text
+*----------------------------------------------------------------------*
+*  -->  p1        text
+*  <--  p2        text
+*----------------------------------------------------------------------*
+FORM validar_autorizaciones .
+  AUTHORITY-CHECK OBJECT 'ZMM_PAPREP'
+      ID 'BUKRS' FIELD p_bukrs-low   " Sociedad
+      ID 'EKORG' FIELD so_orgco-low.  " Organización
+  IF sy-subrc NE 0.
+    MESSAGE e398(00) WITH '¡No cuenta con autorización!.'.
+  ENDIF.
+ENDFORM.                    " VALIDAR_AUTORIZACIONES
+*&---------------------------------------------------------------------*
+*&      Form  F_SEND_MAIL                   DEVK993979.BSCABOVELA
+*&---------------------------------------------------------------------*
+*       Envio de Mail
+*----------------------------------------------------------------------*
+FORM f_send_mail .
+  TYPES:  BEGIN OF ty_direc,
+            direc TYPE zsd13_db03-direc,
+          END OF ty_direc.
+  DATA: lv_xstrn TYPE xstring.
+  DATA: lt_solix TYPE solix_tab.
+  DATA: lw_solix TYPE zmmst_solix.
+  DATA: lt_soliy TYPE zmmtt_solix.
+  DATA: lv_langu TYPE sy-langu.
+  DATA: lv_namea TYPE sood-objdes.
+  DATA: lv_asunt TYPE so_obj_des.
+  DATA: lv_direc TYPE zsd13_db03-direc.
+  DATA: lt_mails TYPE ztemail.
+  DATA: lw_mails TYPE zsemail.
+  DATA: lt_text  TYPE text_lines.
+  DATA: lw_text  TYPE tline.
+  DATA: lt_fcat  TYPE lvc_t_fcat.
+  DATA: lt_sort  TYPE lvc_t_sort.
+  DATA: lt_filt  TYPE lvc_t_filt.
+  DATA: lw_layo  TYPE lvc_s_layo.
+  DATA: lw_varnt TYPE disvariant.
+  DATA: lv_layo  TYPE tvarvc-low.
+  DATA: lv_tcode TYPE sy-tcode.
+  DATA: lv_descr TYPE string.
+
+* Obtención de layout
+  SELECT SINGLE high
+    INTO lv_layo
+    FROM tvarvc
+    WHERE name  EQ 'ZMM_ZMM0090PJOB'
+      AND low   EQ sy-slset. "Variante
+  IF sy-subrc EQ 0.
+
+    MOVE lv_layo TO lw_varnt-variant.
+    MOVE sy-repid TO lw_varnt-report.
+    SPLIT sy-slset AT '_' INTO lv_tcode lv_descr.
+*    IF lv_langu NE sy-langu.
+*      PERFORM prepare_field_catalog CHANGING lt_fcat.
+*    ELSE.
+    MOVE fieldcat TO lt_fcat.
+*    ENDIF.
+
+    CALL FUNCTION 'LVC_VARIANT_SELECT'
+      EXPORTING
+       i_dialog                  = space
+       i_user_specific           = ' '
+       i_default                 = 'X'
+        it_default_fieldcat       = lt_fcat
+     IMPORTING
+*       E_EXIT                    =
+       et_fieldcat               = lt_fcat
+       et_sort                   = lt_sort
+       et_filter                 = lt_filt
+       es_layout                 = lw_layo
+*     TABLES
+*       IT_DATA                   =
+      CHANGING
+        cs_variant                = lw_varnt
+     EXCEPTIONS
+       wrong_input               = 1
+       fc_not_complete           = 2
+       not_found                 = 3
+       program_error             = 4
+       data_missing              = 5
+       OTHERS                    = 6
+              .
+    IF sy-subrc <> 0.
+      MESSAGE ID sy-msgid TYPE sy-msgty NUMBER sy-msgno
+              WITH sy-msgv1 sy-msgv2 sy-msgv3 sy-msgv4.
+    ENDIF.
+
+    DELETE lt_fcat WHERE no_out EQ abap_true.
+    SORT lt_fcat BY col_pos.
+
+* Obtención de XLS
+    CALL FUNCTION 'ZMMFM_CREATE_XLS_FROM_ITAB'
+      EXPORTING
+        it_fieldcat = lt_fcat
+        it_sort     = lt_sort
+        it_filt     = lt_filt
+        iw_layout   = lw_layo
+      IMPORTING
+        ev_xstring  = lv_xstrn
+      CHANGING
+        ct_data     = it_alv.
+
+    lt_solix = cl_document_bcs=>xstring_to_solix( lv_xstrn ).
+
+    MOVE lt_solix TO lw_solix-solix.
+    lw_solix-objln = XSTRLEN( lv_xstrn ).
+    MOVE 'ZMM0090P' TO lw_solix-name.
+    MOVE 'XLS'      TO lw_solix-type.
+    MOVE sy-langu   TO lw_solix-langu.
+    APPEND lw_solix TO lt_soliy.
+
+*Obtención de Mails
+    SELECT SINGLE direc
+      INTO lv_direc "TABLE lt_direc
+      FROM zsd13_db03
+      WHERE tcode EQ lv_tcode.
+    WHILE lv_direc IS NOT INITIAL.
+      IF lv_direc(1) NE ','.
+        CONCATENATE lw_mails-correo lv_direc(1) INTO lw_mails-correo.
+      ELSE.
+        APPEND lw_mails TO lt_mails.
+        CLEAR lw_mails.
+      ENDIF.
+      MOVE space TO lv_direc(1).
+      SHIFT lv_direc BY 1 PLACES LEFT.
+    ENDWHILE.
+
+    IF lw_mails IS NOT INITIAL.
+      APPEND lw_mails TO lt_mails.
+      CLEAR lw_mails.
+    ENDIF.
+*Asunto y texto
+    MOVE text-112 TO lv_asunt.
+
+    MOVE '*'      TO lw_text-tdformat.
+    MOVE text-113 TO lw_text-tdline.
+    APPEND lw_text TO lt_text.
+
+    IF lt_mails IS NOT INITIAL AND lt_soliy IS NOT INITIAL.
+      CALL FUNCTION 'ZMMFM_SEND_MAIL_SOLIX_ATTACH'
+        EXPORTING
+          nom_extencion_adjunto = lv_namea
+          asunto                = lv_asunt
+          it_text               = lt_text
+          it_mails              = lt_mails
+          it_solix              = lt_soliy
+          iv_commit             = abap_true.
+    ENDIF.
+
+  ENDIF.
+
+ENDFORM.                    " F_SEND_MAIL
