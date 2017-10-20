@@ -1,0 +1,859 @@
+*&----------------------------------------------------------------------*
+*&  Include           ZMM_ORDCOMPRA_TOP_BPK
+*&------------------------------------------------------------------------*
+TABLES: ekko,
+  t001,
+  t024e,
+  kna1,
+  tzont,
+  lfa1,
+  ekpo,
+  komk,
+  ebkn.
+
+DATA vl_indice LIKE sy-tabix.
+
+DATA: wa_t16fs TYPE t16fs.
+DATA: BEGIN OF wa_cdhdr,
+
+ udate LIKE cdhdr-udate,
+ utime LIKE cdhdr-utime,
+
+ END OF wa_cdhdr.
+DATA: BEGIN OF wa_cdpos,
+
+changenr LIKE cdpos-changenr,
+
+END OF wa_cdpos.
+
+DATA: llavebanfn LIKE eban-banfn. "bscabkfran 02-09-2013
+DATA: llavepos(5).
+DATA: llavecambio LIKE cdpos-tabkey.
+DATA: it_cdpos LIKE wa_cdpos OCCURS 0 WITH HEADER LINE.
+DATA: it_cdhdr LIKE wa_cdhdr OCCURS 0 WITH HEADER LINE.
+**--variables para iva, retencion, total
+DATA: total LIKE komk-fkwrt,
+      iva LIKE komk-fkwrt,
+      retencion LIKE komk-fkwrt,
+      grantotal LIKE komk-fkwrt,
+      desc_zterm LIKE tvzbt-vtext,
+      nom_emb LIKE tinct-bezei,
+*      DESC_BSBEZ LIKE T163M-BSBEZ,
+      desc_bsbez(60) TYPE c,
+      desc_bsbez1(60) TYPE c,
+      referen LIKE tline-tdline,
+      transpzone LIKE adrc-transpzone,
+      t_vtext LIKE tzont-vtext,
+      rfc LIKE lfa1-stcd1,
+      autoriza(45) TYPE c,
+      aviso_iva(30) TYPE c,
+      sakto LIKE ekkn-sakto,
+      kostl LIKE ekkn-kostl,
+      v_aut3(40) TYPE c,  "puesto de autorizador 3
+      v_aut4(40) TYPE c,  "puesto de autorizador 4
+      vn_aut3(40) TYPE c, "nombre de autorizador 3
+      vn_aut4(40) TYPE c, "nombre de autorizador 4
+      v_linea(30) TYPE c, "linea horizontal para impresion
+      v_linea2(30) TYPE c,"linea horizontal para impresion
+      v_mtoletra LIKE spell,"Guarda el monto total en letra
+      v_moneda(20) TYPE c,"guarda divisa en letras (pesos/dolares)
+      v_centavos(20) TYPE c,"restante de monto en centavos [nn/100 MN | nn/100 US]
+      v_cant(15) TYPE c."ALMACENA PARTE DECIMAL DEL MONTO
+
+"BSCABLFRAN 03-06-2013 --- INICIO ---
+TYPES: BEGIN OF ty_mblnr,
+  kokrs  LIKE mseg-kokrs,
+  ebeln TYPE ebeln,
+  ebelp LIKE mseg-ebelp,
+  matnr LIKE mseg-matnr,
+  budat TYPE budat,
+  mblnr TYPE mblnr,
+  mjahr TYPE mjahr,
+  END OF ty_mblnr.
+
+
+DATA: wa_mblnr TYPE ty_mblnr.
+DATA wa_mkpf TYPE ty_mblnr.
+DATA: it_mblnr LIKE TABLE OF wa_mblnr. "BSCABLFRAN 03-06-2013 --- FIN ---
+DATA: it_mkpf LIKE TABLE OF wa_mblnr.
+
+TYPES: BEGIN OF ty_eban,
+  banfn LIKE eban-banfn,
+  badat LIKE eban-badat,
+  frgdt LIKE eban-frgdt,
+  frgkz LIKE eban-frgkz,
+*====================== BSCABRSALI DD/MM/20AA ============================
+*================= DEVK  / OSS-150129-1215 =========================
+  IDNLF LIKE eban-IDNLF,
+  BNFPO LIKE eban-BNFPO,
+*===============================  Fin  ®===================================
+  END OF ty_eban.
+
+
+DATA: wa_eban TYPE ty_eban,
+      ti_eban LIKE TABLE OF wa_eban.
+TYPES: BEGIN OF ty_ebkn,
+      ebeln LIKE ekkn-ebeln,
+      ebelp LIKE ekkn-ebelp,
+      sakto LIKE ekkn-sakto,
+           "BSCABLFRAN 14-08-2013
+  END OF ty_ebkn.
+
+
+DATA: wa_ebkn TYPE ty_ebkn,
+      ti_ebkn LIKE TABLE OF wa_ebkn. "BSCABLFRAN 14-08-2013
+
+
+
+DATA: name LIKE thead-tdname,
+       ty_ebeln LIKE ekko-ebeln,
+       ty_spras LIKE ekko-spras,
+       material LIKE ekpo-ebelp,
+       name_text LIKE thead-tdname.
+
+DATA: BEGIN OF wt_lines OCCURS 0.
+        INCLUDE STRUCTURE tline.
+DATA: END OF wt_lines.
+DATA wa_lines LIKE LINE OF wt_lines.
+
+DATA: ok_code LIKE sy-ucomm,
+      save_ok LIKE sy-ucomm,
+      g_repid LIKE sy-repid.
+
+TYPE-POOLS vrm.
+*   SEARCH HELP PERSONALIZADOS
+DATA:BEGIN OF i_return_tab OCCURS 0.
+        INCLUDE STRUCTURE ddshretval.
+DATA:END OF i_return_tab.
+
+DATA: fecha2 LIKE sy-datum,
+      netpr_c(15) TYPE c,
+      caso,
+      con TYPE n,
+      selec TYPE n.
+
+DATA: vl_name1_1 LIKE lfa1-name1,
+      vl_name1_2 LIKE lfa1-name2,
+      vl_name2_1 LIKE lfa1-name1,
+      vl_name2_2 LIKE lfa1-name2,
+      vl_regio_1 LIKE lfa1-regio,
+      vl_regio_2 LIKE lfa1-regio,
+      vl_ort01_1 LIKE lfa1-ort01,
+      vl_ort01_2 LIKE lfa1-ort02,
+      vl_ort02_1 LIKE lfa1-ort01,
+      vl_ort02_2 LIKE lfa1-ort02,
+      vl_stras_1 LIKE lfa1-stras,
+      vl_stras_2 LIKE lfa1-stras,
+      vl_telf1_1 LIKE lfa1-telf1,
+      vl_telf1_2 LIKE lfa1-telf2,
+      vl_telf2_1 LIKE lfa1-telf1,
+      vl_telf2_2 LIKE lfa1-telf2,
+      vl_telfx_1 LIKE lfa1-telfx,
+      vl_pstlz_1 LIKE lfa1-pstlz,
+      vl_pstlz_2 LIKE lfa1-pstlz,
+      vl_telfx_2 LIKE lfa1-telfx,
+      vl_ktmng1(13) TYPE p DECIMALS 0.
+
+DATA varia TYPE disvariant.
+DATA: it_auth_val LIKE TABLE OF us335 WITH HEADER LINE.
+************************************************************************
+*Declaración de Work Areas y Tablas Internas
+************************************************************************
+*DATA: BEGIN OF WA_ALV.
+*        INCLUDE STRUCTURE EKKO.
+*DATA CON_IVA TYPE C.
+*DATA: END OF WA_ALV.
+*
+*DATA IT_ALV LIKE WA_ALV OCCURS 0.
+
+DATA: BEGIN OF wa_alv,
+
+
+        ebeln2(10) TYPE c,
+        budat LIKE mkpf-budat, "BSCABLFRAB
+        ebeln LIKE ekko-ebeln,
+        bukrs LIKE ekko-bukrs,
+        ekorg LIKE ekko-ekorg,
+
+        aedat LIKE ekko-aedat,
+        bedat LIKE ekko-bedat,
+        frgke LIKE ekko-frgke,
+        bsart LIKE ekko-bsart,
+        lifnr LIKE ekko-lifnr,
+        waers LIKE ekko-waers,
+        waersn LIKE ekko-waers,
+        zterm TYPE ekko-zterm,
+        zbd1t TYPE ekko-zbd1t,
+        knumv LIKE ekko-knumv,
+        ekgrp LIKE ekko-ekgrp,
+        wkurs LIKE ekko-wkurs,
+        ernam LIKE ekko-ernam,
+        ernamt LIKE adrp-name_first,
+        zter2 TYPE char15,
+        name1 LIKE lfa1-name1,
+        ebelp LIKE ekpo-ebelp,
+        banfn LIKE ekpo-banfn,
+        bnfpo LIKE ekpo-bnfpo, "bscablfran 02-09-2013
+*-----------------------DEVK976411.BSCABOVELA-----------------------*
+        bednr TYPE ekpo-bednr,
+        ean11 TYPE ekpo-ean11,
+        noman TYPE ekpo-ean11,
+*-----------------------DEVK976411.BSCABOVELA-----------------------*
+        matnr LIKE ekpo-matnr,
+        txz01 LIKE ekpo-txz01,
+
+        meins LIKE ekpo-meins,
+        meinsn LIKE ekpo-meins,
+        netpr LIKE ekpo-netpr,
+        netwr LIKE ekpo-netwr,
+        netwrusd LIKE ekpo-netwr,
+        elikz    LIKE ekpo-elikz,
+*------------------------DEVK977849.BSCABOVELA------------------------*
+        peinh TYPE ekpo-peinh,
+        netal TYPE string,
+
+*------------------------DEVK977849.BSCABOVELA------------------------*
+        obmng TYPE obmng,
+             "BSCABJALME   OSS-140502-1157     02/May/2014
+        con_iva TYPE c,
+        datvr   LIKE nast-datvr,  "DEVK949407 - BSCABJVEGA
+        udate   LIKE cdhdr-udate, "DEVK949407 - BSCABJVEGA
+
+        kschlc1 LIKE konv-kschl, "Datos Condicion 1
+        kbetrc1 LIKE konv-kbetr,
+        waersc1 LIKE konv-waers,
+        vtextc1 LIKE t685t-vtext,
+
+        kschlc2 LIKE konv-kschl,  "Datos Condicion 2
+        kbetrc2 LIKE konv-kbetr,
+        waersc2 LIKE konv-waers,
+        vtextc2 LIKE t685t-vtext,
+
+        kschlc3 LIKE konv-kschl,  "Datos Condicion 3
+        kbetrc3 LIKE konv-kbetr,
+        waersc3 LIKE konv-waers,
+        vtextc3 LIKE t685t-vtext,
+
+        kschlc4 LIKE konv-kschl,  "Datos Condicion 4
+        kbetrc4 LIKE konv-kbetr,
+        waersc4 LIKE konv-waers,
+        vtextc4 LIKE t685t-vtext,
+
+        textp TYPE tline-tdline,
+
+     "BSCABJDELG 26/11/2012 DEVK951382
+        frggr TYPE ekko-frggr, "Grupo de liberación
+        frgsx TYPE ekko-frgsx, "Estrategia liberac.
+        frgzu TYPE ekko-frgzu, "Estado liberación
+        frgct TYPE t16fd-frgct, "Denominación
+        eindt LIKE eket-eindt, "BSCABLFRAN
+
+        mjahr LIKE mseg-mjahr, "BSCABLFRAN
+        badat LIKE eban-badat, "BSCABLFRAN 13-08-2013
+        frgdt LIKE eban-frgdt, "BSCABLFRAN 13-08-2013
+        flibe LIKE eban-erdat,
+        frgkz LIKE eban-frgkz, "BSCABLFRAN 02-09-2013
+        sakto LIKE ebkn-sakto, "BSCABLFRAN 13-08-2013
+
+        reswk TYPE ekko-reswk,
+*====================== BSCABRSALI 16/12/2014 ============================
+*================= DEVK  / OSS-141215-1135 =========================
+        kostl TYPE csks-kostl,
+        mctxt TYPE cskt-mctxt,
+        saknr TYPE skat-saknr,
+        txt20 TYPE skat-txt20,
+*===============================  Fin  ®===================================
+
+*====================== BSCABRSALI 19/12/2014 ============================
+*================= DEVK977679  / OSS-141121-1842 =========================
+       pstyp TYPE ekpo-pstyp,
+       ptext TYPE t163y-ptext,
+       knttp type ekpo-knttp,
+*===============================  Fin  ®===================================
+
+*====================== BSCABRSALI DD/MM/20AA ============================
+*================= DEVK  / OSS-150129-1215 =========================
+       IDNLF TYPE eban-IDNLF,
+*===============================  Fin  ®===================================
+
+*-----------------------DEVK980031.BSCABOVELA-----------------------*
+        kdatb TYPE ekko-kdatb,
+        kdate TYPE ekko-kdate,
+*-----------------------DEVK980031.BSCABOVELA-----------------------*
+      INFNR TYPE eine-INFNR,
+      WEBRE TYPE EKPO-WEBRE,
+
+   menge(16) type p DECIMALS 3,
+   pentr(16) TYPE p DECIMALS 2,
+   netsr(16) TYPE p DECIMALS 2,
+*====================== BSCABRSALI 21/05/2015 ============================
+*=================  DEVK981720 / OSS-150519-1748 =========================
+   LOEKZ TYPE ekpo-loekz,
+*===============================  Fin  ®==================================
+*--------------------DEVK982517.BSCABOVELA----------------------------*
+  werks TYPE ekpo-werks,
+*--------------------DEVK982517.BSCABOVELA----------------------------*
+*------------------------DEVK984797.BSCABOVELA------------------------*
+      adpri TYPE eban-adpri,
+      adprx TYPE cspcprit-adprx,
+*------------------------DEVK984797.BSCABOVELA------------------------*
+*====================== BSCABRSALI 05/11/2015 ============================
+*=================  DEVK985551 / OSS-151016-1710 =========================
+    AUFNR TYPE  EKKN-AUFNR,
+    AFNAM TYPE  EKPO-AFNAM,
+*===============================  Fin  ®==================================
+*-----------------------DEVK985562.BSCABOVELA--------------------------*
+      hdrtx TYPE string,
+*-----------------------DEVK985562.BSCABOVELA--------------------------*
+      BWTAR TYPE EKPO-BWTAR,
+end of wa_alv,
+
+it_alv like standard table of wa_alv ,
+it_alv2 like standard table of wa_alv ,
+it_alv_aux like standard table of wa_alv.
+
+
+DATA BEGIN OF ty_t163y.
+  INCLUDE STRUCTURE t163y.
+DATA END OF ty_t163y.
+
+DATA: ti_t163y LIKE STANDARD TABLE OF ty_t163y,
+      wa_t163y LIKE ty_t163y.
+
+
+
+DATA  BEGIN OF wa_lineas.
+        INCLUDE STRUCTURE ekpo.
+DATA: END OF wa_lineas.
+
+DATA it_lineas LIKE wa_lineas OCCURS 0 WITH HEADER LINE.
+
+DATA: BEGIN OF wa,
+         vtext LIKE zmm07_db04-vtext,
+         lifnr LIKE zmm07_db04-lifnr,
+         zapnv LIKE zmm07_db04-zapnv,
+         name1 LIKE lfa1-name1,
+       END OF wa.
+DATA: it_ga LIKE wa OCCURS 0 WITH HEADER LINE,
+     wa_ga LIKE LINE OF it_ga,
+     wa_ga2 LIKE LINE OF it_ga,
+     wa_ga3 LIKE LINE OF it_ga.
+
+DATA: BEGIN OF it_ebeln OCCURS 0,
+       bukrs LIKE ekko-bukrs,
+       ekorg LIKE ekko-ekorg,
+       ebeln LIKE ekko-ebeln,
+     END OF it_ebeln.
+
+DATA : BEGIN OF zoption.
+        INCLUDE STRUCTURE itcpo.
+DATA : END OF zoption.
+
+*Variables ALV
+DATA ty_toolbar TYPE stb_button. "TABLA DE BOTONES
+
+DATA: i_selected_rows TYPE lvc_t_row,
+        w_selected_rows TYPE lvc_s_row.
+
+
+DATA: r_container TYPE REF TO cl_gui_custom_container, "OBJETO CUSTOM CONTAINER
+      r_alv_grid TYPE REF TO cl_gui_alv_grid, "OBJECTO ALV GRID
+      pt_exclude TYPE ui_functions, " TABLA DE BOTONES A EXCLUIR
+      fieldcat TYPE lvc_t_fcat, " CATALOGO DE CAMPOS
+      layout TYPE lvc_s_layo, " LAYOUT
+      c_alv_toolbarmanager TYPE REF TO cl_alv_grid_toolbar_manager.  "Toolbar manager
+
+DATA: g_cond_max TYPE int4.
+
+*/*/INICIA
+TYPES: BEGIN OF gtyp_usr,
+         bname       LIKE usr21-bname,
+         name_first  LIKE adrp-name_first,
+         name_last   LIKE adrp-name_last,
+       END OF gtyp_usr.
+
+TYPES: BEGIN OF gtyp_eket,
+        ebeln LIKE eket-ebeln,
+        ebelp LIKE eket-ebelp,
+        etenr LIKE eket-etenr,
+        menge LIKE eket-menge,
+        wemng LIKE eket-wemng,
+      END OF gtyp_eket.
+
+TYPES: BEGIN OF gtyp_nast,
+        kappl LIKE nast-kappl,
+        kschl LIKE nast-kschl,
+        objky LIKE nast-objky,
+        vstat LIKE nast-vstat,
+        datvr LIKE nast-datvr,
+      END OF gtyp_nast.
+
+DATA: gwa_usr TYPE gtyp_usr,
+      gt_usr  TYPE STANDARD TABLE OF gtyp_usr.
+
+DATA: gwa_eket TYPE gtyp_eket,
+      gt_eket  TYPE STANDARD TABLE OF gtyp_eket.
+
+DATA: gwa_nast TYPE gtyp_nast,
+      gt_nast  TYPE STANDARD TABLE OF gtyp_nast.
+*/*/TERMINA
+
+*Inicio BSCABJDELG 26/11/2012 DEVK951382
+TYPES: BEGIN OF ty_t16,
+          frggr TYPE t16fd-frggr,
+          frgco TYPE t16fd-frgco,
+          frgct TYPE t16fd-frgct,
+       END OF   ty_t16.
+
+DATA: it_t16 TYPE TABLE OF ty_t16,
+      wa_t16 TYPE ty_t16.
+*Fin    BSCABJDELG 26/11/2012 DEVK951382
+
+TYPES: BEGIN OF ts_lfa1,
+          lifnr TYPE lfa1-lifnr,
+          name1 TYPE lfa1-name1,
+       END OF ts_lfa1.
+
+DATA: wa_lfa1 TYPE ts_lfa1,
+      ti_lfa1 TYPE STANDARD TABLE OF ts_lfa1.
+*------------------------DEVK977405.BSCABOVELA------------------------*
+TYPES: BEGIN OF ty_groes,
+          matnr TYPE mara-matnr,
+          groes TYPE mara-groes,
+       END OF ty_groes.
+
+DATA: lw_groes TYPE ty_groes,
+      lt_groes TYPE STANDARD TABLE OF ty_groes.
+*------------------------DEVK977405.BSCABOVELA------------------------*
+*------------------------DEVK984797.BSCABOVELA------------------------*
+TYPES:  BEGIN OF ty_adpri,
+          adpri TYPE ekpo-adpri,
+          adprx TYPE cspcprit-adprx,
+        END OF ty_adpri.
+DATA: gt_adprx  TYPE STANDARD TABLE OF ty_adpri.
+
+TYPES: BEGIN OF ty_afih,
+          banfn   TYPE ebkn-banfn,
+          bnfpo   TYPE ebkn-bnfpo,
+          priokx  TYPE t356_t-priokx,
+       END OF ty_afih.
+DATA: gt_afih TYPE STANDARD TABLE OF ty_afih.
+*------------------------DEVK984797.BSCABOVELA------------------------*
+DATA
+        p_ruta     TYPE STRING.
+*>----------------------DEVK998646.BSCABOVELA------------------------->*
+TYPES:  BEGIN OF ty_a017,
+          lifnr TYPE a017-lifnr ,
+          matnr TYPE a017-matnr ,
+          ekorg TYPE a017-ekorg ,
+          werks TYPE a017-werks ,
+          datbi TYPE a017-datbi ,
+          datab TYPE a017-datab ,
+          knumh TYPE konp-knumh ,
+          kbetr TYPE konp-kbetr ,
+          konwa TYPE konp-konwa ,
+        END OF ty_a017.
+
+TYPES:  BEGIN OF ty_konp,
+          knumh TYPE konp-knumh ,
+          kbetr TYPE konp-kbetr ,
+          konwa TYPE konp-konwa ,
+        END OF ty_konp.
+*<----------------------DEVK998646.BSCABOVELA-------------------------<*
+*----------------------------------------------------------------------*
+*       CLASS LCL_EVENT_HANDLER DEFINITION
+*----------------------------------------------------------------------*
+CLASS lcl_event_handler DEFINITION."****Definicion******
+  PUBLIC SECTION.
+    METHODS: handle_data_changed FOR EVENT data_changed OF
+      cl_gui_alv_grid IMPORTING er_data_changed.
+
+    METHODS: constructor
+      IMPORTING
+        io_alv_grid TYPE REF TO cl_gui_alv_grid,
+        on_toolbar "*Event for toolbar
+      FOR EVENT toolbar OF  cl_gui_alv_grid
+       IMPORTING e_object.
+
+    METHODS:handle_user_command
+        FOR EVENT user_command OF cl_gui_alv_grid
+            IMPORTING e_ucomm.
+
+    METHODS: handle_double_click
+        FOR EVENT double_click OF cl_gui_alv_grid
+            IMPORTING e_row e_column
+        .
+
+ENDCLASS. " CLASS LCL_EVENT_HANDLER DEF..
+
+*----------------------------------------------------------------------*
+*       CLASS LCL_EVENT_HANDLER IMPLEMENTATION
+*----------------------------------------------------------------------*
+CLASS lcl_event_handler IMPLEMENTATION."****Implementación******
+  METHOD constructor.
+*   Create ALV toolbar manager instance
+    CREATE OBJECT c_alv_toolbarmanager
+      EXPORTING
+        io_alv_grid = io_alv_grid.
+  ENDMETHOD.  "constructor
+
+  METHOD handle_data_changed.
+    DATA: lv_changed TYPE lvc_s_modi.
+
+    LOOP AT er_data_changed->mt_good_cells INTO lv_changed
+    WHERE fieldname = 'CON_IVA'.
+
+      CLEAR wa_alv.
+
+      READ TABLE it_alv INTO wa_alv INDEX lv_changed-row_id.
+
+      IF sy-subrc = 0.
+        MOVE lv_changed-value TO wa_alv-con_iva.
+        MODIFY it_alv FROM wa_alv INDEX lv_changed-row_id.
+      ENDIF.
+
+    ENDLOOP.
+  ENDMETHOD.                    "handle_data_changed
+
+  METHOD on_toolbar.
+*    CLEAR TY_TOOLBAR.
+*
+*    TY_TOOLBAR-ICON = ICON_PROTOCOL.
+*    TY_TOOLBAR-BUTN_TYPE = 0.
+*    TY_TOOLBAR-FUNCTION = 'IMPR'.
+*    TY_TOOLBAR-TEXT = 'Imprimir Ordenes'.
+*    TY_TOOLBAR-QUICKINFO = 'Imprimir Ordenes'.
+*    APPEND TY_TOOLBAR TO E_OBJECT->MT_TOOLBAR.
+
+
+*--> OSS-150120-1114
+    CLEAR TY_TOOLBAR.
+    TY_TOOLBAR-ICON = ICON_PROSHARE.
+    TY_TOOLBAR-BUTN_TYPE = 0.
+    TY_TOOLBAR-FUNCTION = 'DES'(003).
+    TY_TOOLBAR-TEXT = 'Des. Excel'.
+    TY_TOOLBAR-QUICKINFO = 'Descargar a excel'.
+    APPEND TY_TOOLBAR TO E_OBJECT->MT_TOOLBAR.
+
+  ENDMETHOD.  "on_toolbar
+
+  METHOD handle_user_command.
+    DATA: lt_rows TYPE lvc_t_row.
+    CASE e_ucomm.
+
+      WHEN 'IMPR'.
+        CALL METHOD r_alv_grid->get_selected_rows
+          IMPORTING
+            et_index_rows = lt_rows.
+        CALL METHOD cl_gui_cfw=>flush.
+        IF sy-subrc NE 0.
+          CALL FUNCTION 'POPUP_TO_INFORM'
+            EXPORTING
+              titel = g_repid
+              txt2  = sy-subrc
+              txt1  = 'Error '(500).
+        ELSE.
+          CLEAR selec.
+          DESCRIBE TABLE lt_rows LINES selec.
+          IF selec > 0.
+            PERFORM impr TABLES lt_rows.
+          ENDIF.
+        ENDIF.
+
+*--> OSS-150120-1114
+    WHEN 'DES'.
+      PERFORM descargar_a_excel.
+    ENDCASE.
+  ENDMETHOD.                    "HANDLE_USER_COMMAND
+
+  METHOD handle_double_click.
+    IF e_column = 'TEXTP'.
+      READ TABLE it_alv INDEX e_row INTO wa_alv.
+
+      IF sy-subrc = 0.
+        PERFORM show_posn_text USING wa_alv-ebeln wa_alv-ebelp.
+      ENDIF.
+    ENDIF.
+
+  IF e_column = 'FRGCT'. "DEVK985562.BSCABOVELA
+      READ TABLE it_alv INDEX e_row INTO wa_alv.
+
+      IF sy-subrc = 0.
+
+CALL FUNCTION 'ME_CHANGEDOC_SHOW'
+  EXPORTING
+    I_DOCUMENT_CATEGORY       = 'F'
+    I_DOCUMENT_NUMBER         = wa_alv-ebeln2
+.
+      ENDIF.
+    ENDIF.
+*-----------------------DEVK985562.BSCABOVELA--------------------------*
+    IF e_column EQ 'EBELN2'.
+
+***->begin bscabmbret  13/04/2016  OSS-160404-1318
+data :lv_row type i.
+data :lv_value type EKKO-EBELN.
+
+CLEAR LV_VALUE.
+CALL METHOD r_alv_grid->GET_CURRENT_CELL
+          IMPORTING
+            e_row = lv_row
+            e_value = lv_value.
+
+***        READ TABLE it_alv INDEX e_row INTO wa_alv.
+***        IF sy-subrc EQ 0.
+***          SET PARAMETER ID 'BES' FIELD wa_alv-ebeln2.
+  IF lv_value IS NOT INITIAL.
+         SET PARAMETER ID 'BES' FIELD LV_VALUE.
+          CALL TRANSACTION 'ME23N'.
+        ENDIF.
+
+*      READ TABLE it_alv INDEX e_row INTO wa_alv.
+*      IF sy-subrc EQ 0.
+*        SET PARAMETER ID 'BES' FIELD wa_alv-ebeln2.
+*        CALL TRANSACTION 'ME23N'.
+*      ENDIF.
+
+***->end bscabmbret 13/04/2016  OSS-160404-1318
+
+    ENDIF.
+    IF e_column EQ 'HDRTX'.
+      READ TABLE it_alv INDEX e_row INTO wa_alv.
+      IF sy-subrc EQ 0.
+        PERFORM show_long_text USING 'F01' wa_alv-ebeln2 'EKKO'.
+      ENDIF.
+    ENDIF.
+*-----------------------DEVK985562.BSCABOVELA--------------------------*
+
+  ENDMETHOD."HANDLE_USER_COMMAND
+
+ENDCLASS. " CLASS LCL_EVENT_HANDLER IMPLEMENTATION
+
+DATA o_event_handler TYPE REF TO lcl_event_handler.
+
+*--------------------------------------------------------------
+* S T A R T - O F - S E L E C T I O N
+*--------------------------------------------------------------
+START-OF-SELECTION.
+************************************************************************
+*Selection-Screen.
+************************************************************************
+  SELECTION-SCREEN BEGIN OF BLOCK b1 WITH FRAME TITLE text-010.
+
+  SELECT-OPTIONS: p_bukrs FOR t001-bukrs OBLIGATORY NO INTERVALS,
+                  so_orgco FOR t024e-ekorg OBLIGATORY,
+                  so_bsart FOR ekko-bsart OBLIGATORY,
+                  so_ebeln FOR ekko-ebeln,
+                  so_lifnr FOR ekko-lifnr,
+                  p_ematn  FOR ekpo-ematn,
+                  so_datum FOR ekko-aedat,
+*PARAMETERS      SO_DATE1 LIKE SY-DATUM.
+                  pa_stat FOR ekko-frgke NO INTERVALS,
+*====================== BSCABRSALI 21/05/2015 ============================
+*================= DEVK981720  / OSS-150515-1222 =========================
+                  so_ekgrp FOR ekko-ekgrp.
+*===============================  Fin  ®===================================
+  SELECTION-SCREEN SKIP 1.
+
+  SELECTION-SCREEN BEGIN OF LINE.
+  PARAMETERS:      p_dpurch     AS CHECKBOX DEFAULT ' '.
+  SELECTION-SCREEN COMMENT (29) text-115.
+  SELECTION-SCREEN END OF LINE.
+
+  SELECTION-SCREEN BEGIN OF LINE.
+  PARAMETERS:      p_pend     AS CHECKBOX DEFAULT ' '.
+  SELECTION-SCREEN COMMENT (29) text-014.
+  SELECTION-SCREEN END OF LINE.
+
+  SELECTION-SCREEN BEGIN OF LINE.
+  PARAMETERS:      p_ga     AS CHECKBOX DEFAULT ' '.
+  SELECTION-SCREEN COMMENT (29) text-011.
+  SELECTION-SCREEN END OF LINE.
+
+  SELECTION-SCREEN BEGIN OF LINE.
+  PARAMETERS:   p_m5000  AS CHECKBOX DEFAULT ' '.
+
+  SELECTION-SCREEN COMMENT (20) text-012.
+  " PARAMETERS: P_M5000 LIKE ekpo-netwr DEFAULT '5000'. "16-10-2013 bscablfran comentan cambios de roger
+  SELECTION-SCREEN COMMENT (35) text-013.
+  SELECTION-SCREEN END OF LINE.
+
+  SELECTION-SCREEN END OF BLOCK b1.
+
+
+  SELECTION-SCREEN BEGIN OF BLOCK b2 WITH FRAME TITLE text-074.
+
+PARAMETER : P_Ped RADIOBUTTON GROUP GR1,
+
+            P_Par RADIOBUTTON GROUP GR1.
+
+
+   SELECTION-SCREEN END OF BLOCK b2.
+
+*SELECTION-SCREEN BEGIN OF BLOCK GA WITH FRAME.
+*
+*SELECTION-SCREEN END OF BLOCK GA.
+
+*--------------------------------------------------------------
+* AT SELECTION-SCREEN ON VALUE REQUEST
+*--------------------------------------------------------------
+AT SELECTION-SCREEN ON VALUE-REQUEST FOR so_ebeln-low.
+  CLEAR:   i_return_tab, it_ebeln.
+  REFRESH: i_return_tab, it_ebeln.
+  IF so_ebeln-low IS INITIAL.
+    fecha2 = sy-datum - 180.
+    SELECT
+      bukrs
+      ekorg
+      ebeln
+    INTO CORRESPONDING FIELDS OF TABLE it_ebeln
+    FROM ekko
+    WHERE ekorg IN so_orgco
+       AND bukrs IN p_bukrs
+*       AND AEDAT IN SO_DATE1
+       AND kdate > fecha2
+      .
+
+    CALL FUNCTION 'F4IF_INT_TABLE_VALUE_REQUEST'
+      EXPORTING
+        retfield    = 'P_VBELN-LOW'
+        dynpprog    = sy-repid
+        dynpnr      = sy-dynnr
+        dynprofield = text-062 "DEVK976238.BSCABOVELA
+*        DYNPROFIELD = 'Contrato de Venta' "DEVK976238.BSCABOVELA
+        value_org   = 'S'
+      TABLES
+        value_tab   = it_ebeln
+        return_tab  = i_return_tab.
+    so_ebeln-low = i_return_tab = i_return_tab-fieldval.
+  ENDIF.
+
+AT SELECTION-SCREEN ON VALUE-REQUEST FOR so_ebeln-high.
+  CLEAR:   i_return_tab, it_ebeln.
+  REFRESH: i_return_tab, it_ebeln.
+  IF so_ebeln-high IS INITIAL.
+    fecha2 = sy-datum - 180.
+    SELECT
+      bukrs
+      ekorg
+      ebeln
+    INTO CORRESPONDING FIELDS OF TABLE it_ebeln
+    FROM ekko
+    WHERE ekorg IN so_orgco
+       AND bukrs IN p_bukrs
+*       AND AEDAT IN SO_DATE1
+       AND kdate > fecha2
+      .
+
+    CALL FUNCTION 'F4IF_INT_TABLE_VALUE_REQUEST'
+      EXPORTING
+        retfield    = 'P_VBELN-HIGH'
+        dynpprog    = sy-repid
+        dynpnr      = sy-dynnr
+        dynprofield = text-062 "DEVK976238.BSCABOVELA
+*        DYNPROFIELD = 'Contrato de Venta'"DEVK976238.BSCABOVELA
+        value_org   = 'S'
+      TABLES
+        value_tab   = it_ebeln
+        return_tab  = i_return_tab.
+
+    READ TABLE i_return_tab INDEX 1.
+    so_ebeln-high = i_return_tab = i_return_tab-fieldval.
+  ENDIF.
+*&---------------------------------------------------------------------*
+*&      Form  SHOW_LONG_TEXT
+*&---------------------------------------------------------------------*
+*       Mostrar texto largo DEVK985562.BSCABOVELA
+*----------------------------------------------------------------------*
+*      -->P_ID  text
+*      -->P_NAME  text
+*      -->P_OBJECT  text
+*----------------------------------------------------------------------*
+FORM show_long_text  USING    p_id      TYPE thead-tdid
+                              p_name
+                              p_object  TYPE thead-tdobject.
+  DATA: lt_lines    TYPE STANDARD TABLE OF tline,
+        lw_lines    TYPE tline,
+        lv_name     TYPE thead-tdname.
+  DATA  lt_fieldcat TYPE slis_t_fieldcat_alv.
+  DATA  lw_fcat     TYPE slis_fieldcat_alv.
+
+  DATA: lw_private  TYPE slis_data_caller_exit,
+        lw_selfield TYPE slis_selfield,
+        lv_exit(1)  TYPE c.
+
+  lv_name = p_name.
+
+  CALL FUNCTION 'READ_TEXT' "Busca Texto en Idioma Español
+    EXPORTING
+      id            = p_id
+      language      = 'S'
+      name          = lv_name
+      object        = p_object
+    TABLES
+      lines         = lt_lines
+    EXCEPTIONS
+      id            = 1
+      language      = 2
+      name          = 3
+      not_found     = 4
+      object        = 5
+      reference_check = 6
+      wrong_access_to_archive = 7
+      .
+  IF sy-subrc NE 0.
+    CALL FUNCTION 'READ_TEXT' "Busca Texto en Idioma ingles
+      EXPORTING
+        id            = p_id
+        language      = 'E'
+        name          = lv_name
+        object        = p_object
+      TABLES
+        lines         = lt_lines
+      EXCEPTIONS
+        id            = 1
+        language      = 2
+        name          = 3
+        not_found     = 4
+        object        = 5
+        reference_check = 6
+        wrong_access_to_archive = 7
+        .
+  ENDIF.
+
+  IF sy-subrc <> 0.
+    MESSAGE ID SY-MSGID TYPE 'I' NUMBER SY-MSGNO
+         WITH SY-MSGV1 SY-MSGV2 SY-MSGV3 SY-MSGV4.
+  ELSE.
+
+    CLEAR: lt_fieldcat, lw_fcat.
+
+    lw_fcat-key       = space.
+    lw_fcat-fieldname = 'TDLINE'.
+    lw_fcat-emphasize = 'C710'.
+    lw_fcat-outputlen = 132.
+    APPEND lw_fcat TO lt_fieldcat.
+
+    CALL FUNCTION 'REUSE_ALV_POPUP_TO_SELECT'
+      EXPORTING
+        i_title       = 'Texto largo'
+        i_selection   = ''
+        i_zebra       = ''
+        i_tabname     = 'LT_LINES'
+        it_fieldcat   = lt_fieldcat[]
+        is_private    = lw_private
+      IMPORTING
+        es_selfield   = lw_selfield
+        e_exit        = lv_exit
+      TABLES
+        t_outtab      = lt_lines
+      EXCEPTIONS
+        program_error = 1
+        OTHERS        = 2.
+    IF sy-subrc <> 0.
+      MESSAGE ID sy-msgid TYPE sy-msgty NUMBER sy-msgno
+              WITH sy-msgv1 sy-msgv2 sy-msgv3 sy-msgv4.
+    ENDIF.
+  ENDIF.
+
+ENDFORM.                    " SHOW_LONG_TEXT
