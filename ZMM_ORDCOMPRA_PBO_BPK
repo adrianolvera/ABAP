@@ -1,0 +1,157 @@
+*&---------------------------------------------------------------------*
+*&  Include           ZMM_ORDCOMPRA_PBO_BPK
+*&------------------------------------------------------------------------*
+MODULE STATUS_0110 OUTPUT.
+  SET PF-STATUS '110'.
+  SET TITLEBAR '110'.
+ENDMODULE.                 " STATUS_0110  OUTPUT
+
+*&---------------------------------------------------------------------*
+*&      Module  TOMA_DATOS  OUTPUT
+*&----------------------------------------------------------------------*
+MODULE TOMA_DATOS OUTPUT.
+*  CALL FUNCTION 'GET_AUTH_VALUES'
+*    EXPORTING
+*      OBJECT1           = 'ZREP_REC'
+*      USER              = SY-UNAME
+*    TABLES
+*      VALUES            = IT_AUTH_VAL
+*    EXCEPTIONS
+*      USER_DOESNT_EXIST = 1
+*      OTHERS            = 2.
+*  READ TABLE IT_AUTH_VAL WITH KEY FIELD = 'EKORG'.
+*  IF SY-SUBRC = 0.
+*    IF IT_AUTH_VAL-LOWVAL EQ '*'.
+*     ELSE.
+*      SO_ORGCO-LOW = IT_AUTH_VAL-LOWVAL.
+*      SO_ORGCO-HIGH = IT_AUTH_VAL-HIGHVAL.
+*      IF SO_ORGCO-HIGH IS INITIAL.
+*        SO_ORGCO-OPTION = 'EQ'.
+*      ENDIF.
+*      MODIFY SO_ORGCO INDEX 1 TRANSPORTING LOW HIGH OPTION.
+*    ENDIF.
+*  ENDIF.
+
+
+
+
+PERFORM TOMADATOS.
+
+
+
+IF P_PAR EQ 'X'.
+  PERFORM ORGANIZACAMPOS.
+  ENDIF.
+
+
+
+ENDMODULE.                 " TOMA_DATOS  OUTPUT
+
+*&---------------------------------------------------------------------*
+*&      Module  DISPLAY_ALV  OUTPUT
+*&---------------------------------------------------------------------*
+MODULE DISPLAY_ALV OUTPUT.
+    IF R_ALV_GRID IS INITIAL.
+    CREATE OBJECT R_CONTAINER
+      EXPORTING
+        CONTAINER_NAME = 'CC_ALV'
+      EXCEPTIONS
+        OTHERS         = 6.
+    IF SY-SUBRC <> 0.
+    ENDIF.
+    CREATE OBJECT R_ALV_GRID
+      EXPORTING
+        I_PARENT      = R_CONTAINER
+        I_APPL_EVENTS = SPACE
+      EXCEPTIONS
+        OTHERS        = 5.
+    IF SY-SUBRC <> 0.
+    ENDIF.
+* Ligar eventos usados y el Handler
+    CREATE OBJECT O_EVENT_HANDLER
+      EXPORTING
+        IO_ALV_GRID = R_ALV_GRID.
+* asignar el handler desde el metodo de la clase definida al objeto alv
+    SET HANDLER O_EVENT_HANDLER->ON_TOOLBAR FOR R_ALV_GRID.
+    SET HANDLER O_EVENT_HANDLER->HANDLE_USER_COMMAND FOR R_ALV_GRID.
+    SET HANDLER O_EVENT_HANDLER->HANDLE_DOUBLE_CLICK FOR R_ALV_GRID.
+
+    PERFORM PREPARE_FIELD_CATALOG CHANGING FIELDCAT.
+    PERFORM PREPARE_LAYOUT CHANGING LAYOUT.
+    PERFORM EXCLUIR_BOTONES_AVL CHANGING PT_EXCLUDE.
+
+    VARIA-REPORT = 'ZMM_ORDCOMPRA_BPK'.
+*>----------------------DEVK993979.BSCABOVELA------------------------->*
+    IF sy-batch EQ abap_true.
+      PERFORM f_send_mail.
+    ENDIF.
+*<----------------------DEVK993979.BSCABOVELA-------------------------<*
+
+IF P_PAR EQ 'X'.
+
+      REFRESH IT_ALV.
+
+      MOVE IT_ALV2 TO IT_ALV.
+
+  CALL METHOD R_ALV_GRID->SET_TABLE_FOR_FIRST_DISPLAY
+
+      EXPORTING
+        IS_LAYOUT            = LAYOUT
+        IS_VARIANT           = VARIA
+        IT_TOOLBAR_EXCLUDING = PT_EXCLUDE
+        I_SAVE               = 'A'
+      CHANGING
+        IT_OUTTAB            = IT_ALV2
+        IT_FIELDCATALOG      = FIELDCAT
+      EXCEPTIONS
+        OTHERS               = 4.
+    IF SY-SUBRC <> 0.
+    ENDIF.
+    ELSE.
+
+       CALL METHOD R_ALV_GRID->SET_TABLE_FOR_FIRST_DISPLAY
+
+      EXPORTING
+        IS_LAYOUT            = LAYOUT
+        IS_VARIANT           = VARIA
+        IT_TOOLBAR_EXCLUDING = PT_EXCLUDE
+        I_SAVE               = 'A'
+      CHANGING
+        IT_OUTTAB            = IT_ALV
+        IT_FIELDCATALOG      = FIELDCAT
+      EXCEPTIONS
+        OTHERS               = 4.
+    IF SY-SUBRC <> 0.
+    ENDIF.
+  ENDIF.
+
+
+    CALL METHOD R_ALV_GRID->register_edit_event
+      EXPORTING
+        i_event_id = cl_gui_alv_grid=>mc_evt_enter.
+
+* Evento que captura los cambios realizados
+    CALL METHOD R_ALV_GRID->register_edit_event
+      EXPORTING
+        i_event_id = cl_gui_alv_grid=>mc_evt_modified.
+
+    SET HANDLER O_EVENT_HANDLER->handle_data_changed FOR R_ALV_GRID.
+
+    CALL METHOD R_ALV_GRID->SET_READY_FOR_INPUT
+      EXPORTING
+        I_READY_FOR_INPUT = 1.
+
+  ELSE.
+*>----------------------DEVK993979.BSCABOVELA------------------------->*
+    IF sy-batch EQ abap_true.
+      PERFORM f_send_mail.
+    ENDIF.
+*<----------------------DEVK993979.BSCABOVELA-------------------------<*
+    CALL METHOD R_ALV_GRID->REFRESH_TABLE_DISPLAY
+      EXCEPTIONS
+        FINISHED = 1
+        OTHERS   = 2.
+    IF SY-SUBRC <> 0.
+    ENDIF.
+  ENDIF.
+ENDMODULE.                 " DISPLAY_ALV  OUTPUT
