@@ -1,0 +1,291 @@
+######Funcion para mostrar alv#############
+
+CALL FUNCTION 'REUSE_ALV_GRID_DISPLAY'
+    EXPORTING
+      i_callback_program      = sy-repid
+      i_callback_top_of_page  = 'ARMA_TOPOFPAGE'
+      i_callback_user_command = 'USER_COMMAND'
+      is_layout               = layout_alv "Variable de Layout
+      it_fieldcat             = ti_fieldcat_alv "Variable de Field Catalog
+      i_save                  = 'A' "para que aparezcan los iconos de guardar variante
+      i_default               = 'X'
+    TABLES
+      t_outtab                = ti_catart
+    EXCEPTIONS
+      program_error           = 1
+      OTHERS                  = 2.
+
+  IF sy-subrc <> 0.
+    MESSAGE ID sy-msgid TYPE sy-msgty NUMBER sy-msgno
+    WITH sy-msgv1 sy-msgv2 sy-msgv3 sy-msgv4.
+  ENDIF.
+
+
+  ###### Excluir funciones en alv ###########
+
+  DATA lw_exclude TYPE ui_func.
+
+  lw_exclude = cl_gui_alv_grid=>mc_fc_auf.
+  APPEND lw_exclude TO lt_exclude.
+
+  w_exclude = cl_gui_alv_grid=>mc_fc_average.
+  APPEND lw_exclude TO lt_exclude.
+
+  #####Descargar a excel con catálogo dinámico ##########
+
+  FORM descargar_a_excel .
+
+  TYPES: BEGIN OF ty_fieldnames,
+          nombre TYPE c LENGTH 50,  "Nombes de columnas para descarga
+         END OF ty_fieldnames.
+
+
+*<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<___EJEMPLO__>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+
+  TYPES: ty_line TYPE string.
+
+  DATA:
+        it_tab2 TYPE TABLE OF ty_line,
+        linea TYPE string. " Contains records for second sheet
+*<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<___EJEMPLO__>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+
+
+  DATA:
+        ti_fieldnames    TYPE STANDARD TABLE OF ty_fieldnames,
+        lt_fcat          TYPE lvc_t_fcat,
+        ls_fcat          LIKE LINE OF lt_fcat,
+        lo_tabla         TYPE REF TO data,
+        lo_linea         TYPE REF TO data,
+        lo_lincol        TYPE REF TO data,
+        wa_fieldnames    TYPE ty_fieldnames,
+        aux_fieldcatalog TYPE lvc_t_fcat,
+        eslayout           TYPE lvc_s_layo,
+        lv_fname         TYPE lvc_fname,
+        ld_filename      TYPE string,
+        ld_path          TYPE string,
+        ld_fullpath      TYPE string,
+        vl_contador      TYPE i,
+        lv_filas(8)      TYPE n.
+
+  DATA: contador TYPE i,
+        vg_name  TYPE c LENGTH 30.
+
+  FIELD-SYMBOLS:  <tabla>  TYPE STANDARD TABLE,
+                  <color>  TYPE ANY TABLE,
+                  <linea>  TYPE any,
+                  <lincol> TYPE lvc_s_styl,
+                  <fs_alv> LIKE wa_alv.
+
+
+*--> ventana de dialogo para capturar la ruta donde se descargara el archivo
+  CALL METHOD cl_gui_frontend_services=>file_save_dialog
+    EXPORTING
+      window_title         = 'Guardar Archivo'
+      default_extension    = '*.xls;*.xlsx;*.xlsm'
+      default_file_name    = 'Reporte.xls'
+      with_encoding        = ''
+      file_filter          = 'Excel(*.xls)|*.xls|*.xlsx|*.xlsm'
+      initial_directory    = 'c:\' " 'C:\Users\bscrsalina\Desktop\TMP CANDY\'
+      prompt_on_overwrite  = 'X'
+    CHANGING
+      filename             = ld_filename
+      path                 = ld_path
+      fullpath             = ld_fullpath
+    EXCEPTIONS
+      cntl_error           = 1
+      error_no_gui         = 2
+      not_supported_by_gui = 3
+      OTHERS               = 4.
+
+  p_ruta  = ld_fullpath.
+
+
+*-->Se recupera el layout de pantalla del reporte
+  CALL METHOD r_alv_grid->get_backend_fieldcatalog
+    IMPORTING
+      et_fieldcatalog = aux_fieldcatalog
+    EXCEPTIONS
+      OTHERS          = 4.
+  CLEAR ls_fcat.
+  IF sy-subrc = 0.
+    DELETE aux_fieldcatalog WHERE no_out EQ 'X'.
+  ENDIF.
+
+  SORT aux_fieldcatalog BY col_pos.
+
+*-->Filtramos solo los campos visibles en la pantalla
+  LOOP AT aux_fieldcatalog INTO ls_fcat.
+
+*<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<___EJEMPLO__>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+    CONCATENATE  ls_fcat-scrtext_m  linea INTO linea  SEPARATED BY '#'.
+*<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<___EJEMPLO__>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+
+
+    vg_name            = ls_fcat-scrtext_m.
+    ls_fcat-cfieldname = vg_name.
+    ls_fcat-outputlen  = ls_fcat-outputlen.
+    ls_fcat-fieldname  = ls_fcat-fieldname.
+
+    wa_fieldnames-nombre = vg_name.
+
+    APPEND ls_fcat TO lt_fcat.
+    APPEND  wa_fieldnames TO ti_fieldnames.
+
+    CLEAR:  vg_name,
+            ls_fcat,
+            wa_fieldnames.
+
+  ENDLOOP.
+
+  APPEND linea TO it_tab2.
+
+*-->Se crea la tabla dinamica en base a las columnas obtenidas lt_fcat
+  CALL METHOD cl_alv_table_create=>create_dynamic_table
+    EXPORTING
+      i_style_table   = 'X'
+      it_fieldcatalog = lt_fcat
+    IMPORTING
+      ep_table        = lo_tabla
+      e_style_fname   = lv_fname.
+
+
+  ASSIGN lo_tabla->* TO <tabla>.
+
+
+  CREATE DATA lo_linea LIKE LINE OF <tabla>.
+  ASSIGN lo_linea->* TO <linea>.
+
+
+***  ****ADICION expoertacion carga por partida y por grupo 
+
+
+  IF p_par EQ 'X'.
+    DESCRIBE TABLE it_alv2[] LINES lv_filas.
+
+    CLEAR vl_contador.
+
+*-->Se agrega los datos para cada campo de la tabla dinamica
+    DO lv_filas TIMES.
+
+      vl_contador = vl_contador + 1.
+
+      READ TABLE it_alv2[] ASSIGNING <fs_alv> INDEX vl_contador.
+
+
+      MOVE-CORRESPONDING <fs_alv> TO <linea>.
+
+      APPEND <linea> TO <tabla>.
+
+      CLEAR: <linea>.
+    ENDDO.
+
+*-->Se descarga la tabla Interna (dinamica) en formato Excel
+    CALL FUNCTION 'GUI_DOWNLOAD'
+      EXPORTING
+        filename                = p_ruta
+        filetype                = 'DBF'
+        write_field_separator   = 'X'
+        write_bom               = 'X'
+      TABLES
+        data_tab                = <tabla>
+        fieldnames              = ti_fieldnames
+      EXCEPTIONS
+        file_write_error        = 1
+        no_batch                = 2
+        gui_refuse_filetransfer = 3
+        invalid_type            = 4
+        no_authority            = 5
+        unknown_error           = 6
+        header_not_allowed      = 7
+        separator_not_allowed   = 8
+        filesize_not_allowed    = 9
+        header_too_long         = 10
+        dp_error_create         = 11
+        dp_error_send           = 12
+        dp_error_write          = 13
+        unknown_dp_error        = 14
+        access_denied           = 15
+        dp_out_of_memory        = 16
+        disk_full               = 17
+        dp_timeout              = 18
+        file_not_found          = 19
+        dataprovider_exception  = 20
+        control_flush_error     = 21.
+    IF sy-subrc = 0.
+      MESSAGE s000(ih) WITH 'Descarga exitosa'.
+    ELSE.
+      MESSAGE s000(ih) WITH 'Error en la Descarga.'.
+    ENDIF.
+
+
+  ELSE.
+
+    DESCRIBE TABLE it_alv[] LINES lv_filas.
+
+    CLEAR vl_contador.
+
+*-->Se agrega los datos para cada campo de la tabla dinamica
+    DO lv_filas TIMES.
+
+      vl_contador = vl_contador + 1.
+
+      READ TABLE it_alv[] ASSIGNING <fs_alv> INDEX vl_contador.
+
+      MOVE-CORRESPONDING <fs_alv> TO <linea>.
+
+      APPEND <linea> TO <tabla>.
+
+      CLEAR: <linea>.
+    ENDDO.
+
+*-->Se descarga la tabla Interna (dinamica) en formato Excel
+    CALL FUNCTION 'GUI_DOWNLOAD'
+      EXPORTING
+        filename                = p_ruta
+        filetype                = 'DBF'
+        write_field_separator   = 'X'
+        write_bom               = 'X'
+      TABLES
+        data_tab                = <tabla>
+        fieldnames              = ti_fieldnames
+      EXCEPTIONS
+        file_write_error        = 1
+        no_batch                = 2
+        gui_refuse_filetransfer = 3
+        invalid_type            = 4
+        no_authority            = 5
+        unknown_error           = 6
+        header_not_allowed      = 7
+        separator_not_allowed   = 8
+        filesize_not_allowed    = 9
+        header_too_long         = 10
+        dp_error_create         = 11
+        dp_error_send           = 12
+        dp_error_write          = 13
+        unknown_dp_error        = 14
+        access_denied           = 15
+        dp_out_of_memory        = 16
+        disk_full               = 17
+        dp_timeout              = 18
+        file_not_found          = 19
+        dataprovider_exception  = 20
+        control_flush_error     = 21.
+    IF sy-subrc = 0.
+      MESSAGE s000(ih) WITH 'Descarga exitosa'.
+    ELSE.
+      MESSAGE s000(ih) WITH 'Error en la Descarga.'.
+    ENDIF.
+
+
+  ENDIF.
+
+ENDFORM. 
+
+############ Form para momento de guardar vf01 ##########
+
+include RV60AFZC
+form USEREXIT_FILL_VBRK_VBRP
+
+5204 1652 5855 4991 CUENTA JONATHAN
+
+RS_HDSYS_CALL_TC_VARIANT -> Programa para saltar autorizaciones
